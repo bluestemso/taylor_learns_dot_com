@@ -656,7 +656,7 @@ def tools(request):
         "tools.html",
         {
             "msg": request.GET.get("msg"),
-            "deployed_hash": os.environ.get("HEROKU_SLUG_COMMIT"),
+            "deployed_hash": os.environ.get("GIT_COMMIT") or os.environ.get("DEPLOY_VERSION"),
         },
     )
 

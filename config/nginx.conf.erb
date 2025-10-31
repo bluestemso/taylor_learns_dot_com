@@ -1,5 +1,5 @@
 daemon off;
-#Heroku dynos have at least 4 cores.
+# Number of worker processes (adjust based on your VPS configuration)
 worker_processes <%= ENV['NGINX_WORKERS'] || 4 %>;
 
 events {
