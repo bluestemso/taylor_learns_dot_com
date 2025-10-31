@@ -10,6 +10,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
+# SECURITY WARNING: don't run with debug turned on in production!
+# Default to DEBUG=True for development, only disable if explicitly set to False
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("DJANGO_SECRET") or "dev-secret-s(p7%ue-l6r^&@y63p*ix*1"
 if not os.environ.get("DJANGO_SECRET") and not DEBUG:
@@ -20,9 +24,6 @@ SCREENSHOT_SECRET = os.environ.get("SCREENSHOT_SECRET") or ""
 CSRF_TRUSTED_ORIGINS = []
 if os.environ.get("CSRF_TRUSTED_ORIGINS"):
     CSRF_TRUSTED_ORIGINS = os.environ["CSRF_TRUSTED_ORIGINS"].split(",")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(os.environ.get("DJANGO_DEBUG"))
 INTERNAL_IPS = ("127.0.0.1",)
 
 STAGING = bool(os.environ.get("STAGING"))

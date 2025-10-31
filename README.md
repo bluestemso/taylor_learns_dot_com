@@ -86,15 +86,90 @@ Quick rollback capabilities are essential:
 The project includes GitHub Actions CI that:
 - Runs tests on every push and pull request
 - Sets up PostgreSQL database for testing
+- Uses `uv` for dependency management
 - Runs migrations and collects static files
-- Executes the full test suite with `python manage.py test -v3`
+- Executes the full test suite with `uv run python manage.py test -v3`
 
 ## Development Environment Setup
 
+### Installing uv
+
+This project uses [uv](https://github.com/astral-sh/uv) for package management and virtual environment handling. Install uv with:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Or on macOS with Homebrew:
+
+```bash
+brew install uv
+```
+
+### Setting Up the Development Environment
+
+1. Create and sync the virtual environment with uv:
+
+```bash
+uv sync
+```
+
+This will:
+- Create a virtual environment (if it doesn't exist)
+- Install all dependencies from `pyproject.toml`
+- Install the project in editable mode
+
+2. Activate the virtual environment (uv will show you the path, or use):
+
+```bash
+source .venv/bin/activate  # On macOS/Linux
+# or
+source .venv/Scripts/activate  # On Windows
+```
+
+Alternatively, you can run commands directly with `uv run`:
+
+```bash
+uv run python manage.py migrate
+uv run python manage.py runserver
+```
+
+### Adding or Updating Dependencies
+
+To add a new dependency:
+
+```bash
+uv add package-name
+```
+
+To add a development dependency:
+
+```bash
+uv add --dev package-name
+```
+
+To update all dependencies:
+
+```bash
+uv sync --upgrade
+```
+
+To update a specific package:
+
+```bash
+uv add package-name@latest
+```
+
 ### Running Tests
 
-1. Set the `DATABASE_URL` environment variable to `postgres://testuser:testpass@localhost/simonwillisonblog`.
+1. Set the `DATABASE_URL` environment variable to `postgres://testuser:testpass@localhost/taylorlearnsblog`.
 2. Run tests from the repository root with:
+
+```bash
+uv run python manage.py test -v3
+```
+
+Or if the virtual environment is activated:
 
 ```bash
 python manage.py test -v3
