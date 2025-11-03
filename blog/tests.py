@@ -96,7 +96,7 @@ class BlogTests(TransactionTestCase):
     def test_markup(self):
         entry = EntryFactory(
             title="Hello & goodbye",
-            body="<p>First paragraph</p><p>Second paragraph</p>",
+            body="First paragraph\n\nSecond paragraph",
         )
         response = self.client.get(entry.get_absolute_url())
         self.assertContains(
@@ -311,7 +311,7 @@ class BlogTests(TransactionTestCase):
 
     def test_og_description_strips_markdown(self):
         blogmark = BlogmarkFactory(
-            commentary="This **has** *markdown*", use_markdown=True
+            commentary="This **has** *markdown*"
         )
         response = self.client.get(blogmark.get_absolute_url())
         self.assertContains(
@@ -330,7 +330,7 @@ class BlogTests(TransactionTestCase):
 
     def test_og_description_escapes_quotes(self):
         blogmark = BlogmarkFactory(
-            commentary='Fun new "live music model" release', use_markdown=True
+            commentary='Fun new "live music model" release'
         )
         response = self.client.get(blogmark.get_absolute_url())
         self.assertContains(
@@ -375,7 +375,7 @@ class BlogTests(TransactionTestCase):
         self.assertNotIn("Link Title", titles2)
 
     def test_og_description_escapes_quotes_entry(self):
-        entry = EntryFactory(body='<p>Entry with "quotes" in it</p>')
+        entry = EntryFactory(body='Entry with "quotes" in it')
         response = self.client.get(entry.get_absolute_url())
         self.assertContains(
             response,
