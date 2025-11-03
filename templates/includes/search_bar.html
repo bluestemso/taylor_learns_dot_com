@@ -1,0 +1,19 @@
+{% comment %}
+Reusable search bar component.
+
+Parameters:
+- action_url: Form action URL (default: "/search/")
+- placeholder: Placeholder text (default: "Search this site")
+- initial_value: Initial search value (default: empty string)
+- wrapper_style: Inline styles for the wrapper div (optional)
+
+Hidden fields can be added by overriding the extra_form_fields block.
+{% endcomment %}
+<form action="{{ action_url|default:'/search/' }}" method="GET" class="search-form">
+    <div class="search-form-wrapper"{% if wrapper_style %} style="{{ wrapper_style }}"{% endif %}>
+        <input type="search" class="search-input" name="q" value="{{ initial_value|default:'' }}" placeholder="{{ placeholder|default:'Search this site' }}" autocomplete="off">
+        <input type="submit" class="search-submit" value="Search">
+    </div>
+    {% block extra_form_fields %}{% endblock %}
+</form>
+

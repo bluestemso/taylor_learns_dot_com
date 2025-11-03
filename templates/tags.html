@@ -2,10 +2,7 @@
 {% block title %}Tags{% endblock %}
 {% block primary %}
 
-<form action="/search/" method="GET">
-    <input type="search" class="search-input" name="q" value="" style="width: 80%">
-    <input type="submit" class="search-submit" value="Search">
-</form>
+{% include "includes/search_bar.html" %}
 
 {% load tag_cloud %}
 <p id="tagcloud">{% tag_cloud %}</p>

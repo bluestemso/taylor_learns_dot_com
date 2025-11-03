@@ -81,6 +81,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+    
+    // Handle search form submit button disabled state
+    document.querySelectorAll('.search-form').forEach(form => {
+      const input = form.querySelector('.search-input');
+      const submit = form.querySelector('.search-submit');
+      
+      function updateSubmitButton() {
+        const hasValue = input.value.trim().length > 0;
+        submit.disabled = !hasValue;
+        if (hasValue) {
+          submit.style.opacity = '1';
+          submit.style.cursor = 'pointer';
+        } else {
+          submit.style.opacity = '0.6';
+          submit.style.cursor = 'not-allowed';
+        }
+      }
+      
+      // Initial state
+      updateSubmitButton();
+      
+      // Update on input
+      input.addEventListener('input', updateSubmitButton);
+      
+      // Prevent form submission if input is empty
+      form.addEventListener('submit', function(e) {
+        if (!input.value.trim()) {
+          e.preventDefault();
+          return false;
+        }
+      });
+    });
   });
 </script>
 </body>

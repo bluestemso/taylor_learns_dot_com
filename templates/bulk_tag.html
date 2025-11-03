@@ -117,9 +117,11 @@
 {% block item_content %}
 <h2>Bulk Tagging</h2>
 
-<form action="{{ request.path }}" method="GET" id="search-form">
-    <input type="search" class="search-input" name="q" value="{{ q }}" style="width: 80%" autocomplete="off">
-    <input type="submit" class="search-submit" value="Search">
+<form action="{{ request.path }}" method="GET" id="search-form" class="search-form">
+    <div class="search-form-wrapper">
+        <input type="search" class="search-input" name="q" value="{{ q }}" autocomplete="off">
+        <input type="submit" class="search-submit" value="Search">
+    </div>
     {% if selected %}
         {% for pair in selected.items %}
             {% if pair.0 == 'tags' %}

@@ -7,11 +7,13 @@
 <h2 class="archive-h2">{{ date|date:"F Y"}}</h2>
 
 {% if total > 2 %}
-<form action="/search/" method="GET">
-    <input type="search" class="search-input" name="q" value="" placeholder="Search posts from {{ date|date:'F Y' }}" style="width: 80%">
+<form action="/search/" method="GET" class="search-form">
+    <div class="search-form-wrapper">
+        <input type="search" class="search-input" name="q" value="" placeholder="Search posts from {{ date|date:'F Y' }}" autocomplete="off">
+        <input type="submit" class="search-submit" value="Search">
+    </div>
     <input type="hidden" name="year" value="{{ date|date:'Y' }}">
     <input type="hidden" name="month" value="{{ date|date:'n' }}">
-    <input type="submit" class="search-submit" value="Search">
 </form>
 
 <p style="font-size: 0.8em; margin-top: 0.2em;">{{ total|intcomma }} post{{ total|pluralize }}:

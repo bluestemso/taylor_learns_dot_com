@@ -7,9 +7,6 @@
 
 <p style="margin-bottom: 1em">Try running a search instead:</p>
 
-<form action="/search/" method="GET">
-  <input type="search" class="search-input" name="q" value="{{ q }}" style="width: 80%" autocomplete="off">
-  <input type="submit" class="search-submit" value="Search">
-</form>
+{% include "includes/search_bar.html" with initial_value=q %}
 
 {% endblock %}

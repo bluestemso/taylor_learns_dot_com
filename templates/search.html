@@ -8,9 +8,11 @@
 {% load blog_tags %}
 <h2>{{ title }}</h2>
 
-<form action="{{ request.path }}" method="GET">
-    <input type="search" class="search-input" name="q" value="{{ q }}" style="width: 80%" autocomplete="off">
-    <input type="submit" class="search-submit" value="Search">
+<form action="{{ request.path }}" method="GET" class="search-form">
+    <div class="search-form-wrapper">
+        <input type="search" class="search-input" name="q" value="{{ q }}" autocomplete="off">
+        <input type="submit" class="search-submit" value="Search">
+    </div>
     {% if selected %}
         {% for pair in selected.items %}
             {% if pair.0 == 'tags' %}

@@ -941,20 +941,92 @@ div.help p {
   margin: 0 0 1em 0;
 }
 
+/* Modern search bar wrapper - hard corners, contemporary styling */
+.search-form-wrapper {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  max-width: 560px;
+  border: 1px solid #d0d0d0;
+  border-bottom: 2px solid #d0d0d0;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.search-form-wrapper:focus-within {
+  border-color: #733b96;
+  border-bottom-color: #733b96;
+  border-bottom-width: 2px;
+  box-shadow: 0 2px 6px rgba(115, 59, 150, 0.12);
+}
+
+/* Fallback for forms with div wrapper but without class */
+form[action="/search/"] > div,
+form[action*="/search/"] > div {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  max-width: 560px;
+  border: 1px solid #d0d0d0;
+  border-bottom: 2px solid #d0d0d0;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+form[action="/search/"]:focus-within > div,
+form[action*="/search/"]:focus-within > div {
+  border-color: #733b96;
+  border-bottom-color: #733b96;
+  border-bottom-width: 2px;
+  box-shadow: 0 2px 6px rgba(115, 59, 150, 0.12);
+}
+
 .search-input,
 .search-submit {
-  border: 1px solid #733b96;
-  padding: 4px;
-  box-sizing: border-box;
   font-size: 16px;
+  box-sizing: border-box;
+  font-family: "Helvetica Neue", helvetica, sans-serif;
+  border: none;
+  outline: none;
+  background: transparent;
 }
+
 .search-input {
-  width: 80%;
+  flex: 1;
+  padding: 12px 16px;
+  min-width: 0;
+  border-right: 1px solid #e8e8e8;
 }
+
+.search-input::placeholder {
+  color: #999;
+  opacity: 0.8;
+}
+
 .search-submit {
+  padding: 12px 24px;
   background-color: #733b96;
   color: white;
   cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.search-submit:hover:not(:disabled) {
+  background-color: #5d2f78;
+}
+
+.search-submit:active:not(:disabled) {
+  background-color: #4a2561;
+}
+
+.search-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 div p.search-selections {
   margin-top: 0.5em;
