@@ -249,15 +249,20 @@ class Entry(BaseModel):
     def previous_by_created(self):
         return super().get_previous_by_created(is_draft=False)
 
+    def body_rendered(self):
+        """Render body as markdown to HTML"""
+        return mark_safe(markdown(self.body))
+
     def images(self):
-        """Extracts images from entry.body"""
-        et = ElementTree.fromstring("<entry>%s</entry>" % self.body)
+        """Extracts images from entry.body (rendered from markdown)"""
+        rendered = self.body_rendered()
+        et = ElementTree.fromstring("<entry>%s</entry>" % rendered)
         return [i.attrib for i in et.findall(".//img")]
 
     def index_components(self):
         return {
             "A": self.title,
-            "C": strip_tags(self.body),
+            "C": strip_tags(self.body_rendered()),
             "B": " ".join(self.tags.values_list("tag", flat=True)),
         }
 
@@ -286,7 +291,9 @@ class Entry(BaseModel):
         }
 
     def multi_paragraph(self):
-        return self.body.count("<p") > 1
+        """Check if rendered body has multiple paragraphs"""
+        rendered = self.body_rendered()
+        return rendered.count("<p") > 1
 
     def __str__(self):
         return self.title
@@ -355,10 +362,6 @@ class Blogmark(BaseModel):
     via_url = models.URLField(blank=True, null=True, max_length=512)
     via_title = models.CharField(max_length=255, blank=True, null=True)
     commentary = models.TextField()
-    use_markdown = models.BooleanField(
-        default=False,
-        help_text='Images can use the img element - set width="..." for a specific width and use class="blogmark-image" to center and add a drop shadow.',
-    )
 
     is_blogmark = True
 
@@ -380,9 +383,8 @@ class Blogmark(BaseModel):
         return self.link_url.split("/")[2]
 
     def body(self):
-        if self.use_markdown:
-            return mark_safe(markdown(self.commentary))
-        return self.commentary
+        """Render commentary as markdown to HTML"""
+        return mark_safe(markdown(self.commentary))
 
     def word_count(self):
         count = len(self.commentary.split())
