@@ -26,7 +26,7 @@
 </div>
 {% endif %}
 </div>
-<div class="entryFooter">Posted <a href="/{{ entry.created|date:"Y/M/j/" }}">{{ entry.created|date:"jS F Y" }}</a> at {{ entry.created|date:"f A"|lower }} &middot; <a href="/about/#subscribe">Subscribe</a></div>
+<div class="entryFooter">Posted <a href="/{{ entry.created|date:"Y/M/j/" }}">{{ entry.created|date:"jS F Y" }}</a> at {{ entry.created|date:"f A"|lower }}</div>
 <p class="edit-page-link" data-admin-url="{{ entry.edit_url }}" style="display: none;"></p>
 {% endblock %}
 

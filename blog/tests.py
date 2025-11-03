@@ -301,7 +301,7 @@ class BlogTests(TransactionTestCase):
         self.assertContains(response6, draft_blogmark.link_title)
         self.assertContains(response6, draft_quotation.source)
 
-    def test_entries_feed_includes_subscribe_note(self):
+    def test_entries_feed_includes_note(self):
         EntryFactory()
         response = self.client.get("/atom/entries/")
         self.assertIn(

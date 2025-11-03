@@ -21,7 +21,7 @@
     Posted <a href="/{{ entry.created|date:"Y/M/j/" }}">{{ entry.created|date:"jS F Y" }}</a> at {{ entry.created|date:"f A"|lower }}
     {% if entry.tags.count %}
     &middot; Tagged {% for tag in entry.tags.all %}{{ tag.get_reltag }}{% if not forloop.last %}, {% endif %}{% endfor %}
-    {% endif %}    &middot; <a href="/about/#subscribe">Subscribe</a>
+    {% endif %}
 </div>
 
 {% endblock %}
