@@ -58,6 +58,7 @@ h4,
 h5,
 h6 {
   font-size: 100%;
+  font-family: "Helvetica Neue", helvetica, sans-serif;
 }
 h5 {
   margin-bottom: 0.7em;
@@ -160,9 +161,9 @@ div#sidead {
 div#ft {
   background: linear-gradient(
     to bottom,
-    rgb(154, 103, 175) 0%,
-    rgb(96, 72, 129) 49%,
-    rgb(100, 67, 130) 100%
+    rgb(26, 54, 93) 0%,
+    rgb(15, 32, 55) 49%,
+    rgb(18, 35, 60) 100%
   );
   text-align: center;
   margin: 15px 0 0.4em 0;
@@ -219,7 +220,7 @@ div#secondary img.bubble {
   padding-top: 1px;
 }
 div#secondary h3 {
-  font-family: georgia, serif;
+  font-family: "Helvetica Neue", helvetica, sans-serif;
   margin: 0.5em 0;
 }
 div#secondary ul li {
@@ -254,14 +255,14 @@ div#secondary ul {
   margin-top: 0.5em;
   margin-bottom: 0.2em;
   text-indent: 23px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%238A2BE2'%3E%E2%80%9C%3C/text%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Helvetica Neue, helvetica, sans-serif' font-size='180' fill='%238A2BE2'%3E%E2%80%9C%3C/text%3E%3C/svg%3E");
   background-size: 23px 23px;
   background-repeat: no-repeat;
   background-position: 9px -5px;
   word-break: break-word;
 }
 .item-quote > blockquote p {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%238A2BE2'%3E%E2%80%9D%3C/text%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Helvetica Neue, helvetica, sans-serif' font-size='180' fill='%238A2BE2'%3E%E2%80%9D%3C/text%3E%3C/svg%3E");
   background-size: 23px 23px;
   background-repeat: no-repeat;
   background-position: bottom 2px right;
@@ -343,7 +344,7 @@ div.entry span.textago {
 div.entry h2 {
   font-size: 1.4em;
   line-height: 1.4;
-  font-family: georgia, serif;
+  font-family: "Helvetica Neue", helvetica, sans-serif;
   margin: 0 0 0.8em 0;
 }
 div.entry h2 a {
@@ -357,9 +358,11 @@ div.entry h2 a:hover {
   background-position: 0 3px;
 }
 div.entry h3,
-div.entry h4 {
+div.entry h4,
+.entry.segment h3,
+.entry.segment h4 {
   line-height: 1.4;
-  font-family: georgia, serif;
+  font-family: "Helvetica Neue", helvetica, sans-serif;
   font-size: 1.2em;
   margin: 1.2em 0 0.5em 0;
 }
@@ -423,7 +426,7 @@ div#bighead h1 {
   margin-bottom: 0.4em;
   font-size: 2em;
   line-height: 1;
-  font-family: georgia, serif;
+  font-family: "Helvetica Neue", helvetica, sans-serif;
 }
 div#bigheadcontainer {
   position: relative;
@@ -431,9 +434,9 @@ div#bigheadcontainer {
 div#band {
   background: linear-gradient(
     to bottom,
-    rgb(154, 103, 175) 0%,
-    rgb(96, 72, 129) 49%,
-    rgb(100, 67, 130) 100%
+    rgb(26, 54, 93) 0%,
+    rgb(15, 32, 55) 49%,
+    rgb(18, 35, 60) 100%
   );
   color: white;
   margin-bottom: -1.55em;
@@ -468,6 +471,7 @@ div#primary h2.overband {
   margin-bottom: 0.98em;
   font-weight: normal;
   vertical-align: middle;
+  font-family: "Helvetica Neue", helvetica, sans-serif;
 }
 h2.overband img.feedicon {
   vertical-align: middle;
@@ -486,9 +490,9 @@ div#smallhead {
   text-align: left;
   background: linear-gradient(
     to bottom,
-    rgb(154, 103, 175) 0%,
-    rgb(96, 72, 129) 49%,
-    rgb(100, 67, 130) 100%
+    rgb(26, 54, 93) 0%,
+    rgb(15, 32, 55) 49%,
+    rgb(18, 35, 60) 100%
   );
   color: white;
 }
@@ -548,7 +552,12 @@ h2.band {
   margin-bottom: 0.6em;
   padding: 3px 0 2px 35px;
   clear: both;
-  background-image: url(/static/css/img/purple-gradient.png);
+  background: linear-gradient(
+    to bottom,
+    rgb(26, 54, 93) 0%,
+    rgb(15, 32, 55) 49%,
+    rgb(18, 35, 60) 100%
+  );
   color: white;
   font-weight: normal;
 }
@@ -777,7 +786,7 @@ div#primary div.quote > blockquote {
   clear: both;
   margin-top: 0.5em;
   margin-bottom: 0.2em;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%238A2BE2'%3E%E2%80%9C%3C/text%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Helvetica Neue, helvetica, sans-serif' font-size='180' fill='%238A2BE2'%3E%E2%80%9C%3C/text%3E%3C/svg%3E");
   background-size: 23px 23px;
   background-repeat: no-repeat;
   background-position: 9px -5px;
@@ -798,7 +807,7 @@ div#primary div.quote blockquote  blockquote p:first-child {
 }
 
 div#primary div.quote > blockquote p:last-child {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Times New Roman, serif' font-size='180' fill='%238A2BE2'%3E%E2%80%9D%3C/text%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='11' y='171' font-family='Helvetica Neue, helvetica, sans-serif' font-size='180' fill='%238A2BE2'%3E%E2%80%9D%3C/text%3E%3C/svg%3E");
   background-size: 23px 23px;
   background-repeat: no-repeat;
   background-position: bottom 2px right;
@@ -969,6 +978,7 @@ h3.blog-mixed-list-year {
   margin-top: 0.5em;
   margin-bottom: 1em;
   font-size: 1.2em;
+  font-family: "Helvetica Neue", helvetica, sans-serif;
 }
 
 .elsewhere-date {
@@ -1203,6 +1213,7 @@ body.homepage .hide-on-homepage {
 }
 #h1-nav-wrapper h1 {
   margin-right: 3em;
+  font-family: "Helvetica Neue", helvetica, sans-serif;
 }
 #h1-nav-wrapper ul {
   list-style-type: none;
