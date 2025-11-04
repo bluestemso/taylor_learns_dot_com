@@ -33,7 +33,7 @@ class Command(BaseCommand):
             "--xmldir",
             action="store",
             dest="xmldir",
-            default=os.path.join(settings.BASE_DIR, "old-import-xml"),
+            required=True,
             help="Directory where the XML files live",
         )
 

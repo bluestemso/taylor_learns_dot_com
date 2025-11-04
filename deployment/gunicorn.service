@@ -1,0 +1,38 @@
+[Unit]
+Description=taylorlearns.com Gunicorn daemon
+After=network.target postgresql.service
+
+[Service]
+User=taylorlearns
+Group=taylorlearns
+WorkingDirectory=/home/taylorlearns/taylor_learns_dot_com
+Environment="PATH=/home/taylorlearns/.local/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/etc/taylorlearns.env
+
+# Gunicorn configuration
+ExecStart=/home/taylorlearns/.local/bin/gunicorn \
+    --bind 127.0.0.1:8000 \
+    --workers 4 \
+    --threads 2 \
+    --timeout 60 \
+    --access-logfile /var/log/taylorlearns/gunicorn-access.log \
+    --error-logfile /var/log/taylorlearns/gunicorn-error.log \
+    --log-level info \
+    --capture-output \
+    config.wsgi:application
+
+# Restart configuration
+Restart=always
+RestartSec=3
+StartLimitInterval=0
+
+# Security settings
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/taylorlearns/taylor_learns_dot_com /var/log/taylorlearns
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+
+

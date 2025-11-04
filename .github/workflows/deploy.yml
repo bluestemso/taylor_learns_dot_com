@@ -1,0 +1,76 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  deploy:
+    name: Deploy to Hetzner VPS
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+        run: |
+          APP_DIR="${VPS_APP_DIR:-/home/taylorlearns/taylor_learns_dot_com}"
+          ssh $VPS_USER@$VPS_HOST "APP_DIR='$APP_DIR' bash -s" << 'ENDSSH'
+            set -e
+            cd "$APP_DIR" || exit 1
+            
+            echo "Pulling latest code..."
+            git pull origin main
+            
+            echo "Installing/updating dependencies with uv..."
+            export PATH="$HOME/.cargo/bin:$PATH"
+            uv sync
+            
+            echo "Running database migrations..."
+            source .venv/bin/activate
+            python manage.py migrate --noinput
+            
+            echo "Collecting static files..."
+            python manage.py collectstatic --noinput
+            
+            echo "Restarting Gunicorn service..."
+            sudo systemctl restart taylorlearns
+            
+            echo "Checking service status..."
+            sudo systemctl status taylorlearns --no-pager || true
+            
+            echo "Deployment complete!"
+          ENDSSH
+
+      - name: Health check
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          echo "Waiting for service to be ready..."
+          sleep 5
+          curl -f https://taylorlearns.com/ || echo "Health check failed, but deployment may still be successful"
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+
