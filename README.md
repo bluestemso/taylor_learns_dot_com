@@ -198,3 +198,4 @@ For more insights into Simon Willison's blog development practices, see:
 - [Simon's post on link blogging (December 2024)](https://simonwillison.net/2024/Dec/22/link-blog/)
 - [Simon's blog tag on zero-downtime deployments](https://simonwillison.net/tags/zero-downtime/)
 - [Blog posts on optimal workflows](https://simonwillison.net/tags/deployment/)
+- [Simon's post on building his TIL blog from scratch](https://til.simonwillison.net/django/building-a-blog-in-django)

@@ -111,6 +111,7 @@ class BlogTests(TransactionTestCase):
             """
             <p>First paragraph</p><p>Second paragraph</p>
         """.strip(),
+            html=True,
         )
 
     def test_update_blogmark_runs_commit_hooks(self):
