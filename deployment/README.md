@@ -91,14 +91,14 @@ docker-compose up -d --build
 ### 5. Run Initial Migrations
 
 ```bash
-docker-compose exec django python manage.py migrate
-docker-compose exec django python manage.py collectstatic --noinput
+docker-compose exec django uv run python manage.py migrate
+docker-compose exec django uv run python manage.py collectstatic --noinput
 ```
 
 ### 6. Create Superuser (Optional)
 
 ```bash
-docker-compose exec django python manage.py createsuperuser
+docker-compose exec django uv run python manage.py createsuperuser
 ```
 
 ### 7. Configure Nginx Proxy Manager
@@ -134,8 +134,8 @@ curl http://localhost:8000
 cd ~/app-stack/taylor_learns_dot_com  # or your repo location
 git pull origin main
 docker-compose build django
-docker-compose exec django python manage.py migrate --noinput
-docker-compose exec django python manage.py collectstatic --noinput
+docker-compose exec django uv run python manage.py migrate --noinput
+docker-compose exec django uv run python manage.py collectstatic --noinput
 docker-compose restart django
 ```
 
@@ -474,7 +474,7 @@ docker-compose logs postgres
 
 ```bash
 # Re-collect static files
-docker-compose exec django python manage.py collectstatic --noinput
+docker-compose exec django uv run python manage.py collectstatic --noinput
 
 # Check static files volume
 docker-compose exec django ls -la /app/staticfiles/
@@ -585,8 +585,8 @@ df -h
 cd ~/app-stack/taylor_learns_dot_com
 git pull origin main
 docker-compose build django
-docker-compose exec django python manage.py migrate --noinput
-docker-compose exec django python manage.py collectstatic --noinput
+docker-compose exec django uv run python manage.py migrate --noinput
+docker-compose exec django uv run python manage.py collectstatic --noinput
 docker-compose restart django
 ```
 

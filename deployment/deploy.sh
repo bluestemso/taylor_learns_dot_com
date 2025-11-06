@@ -83,7 +83,7 @@ deploy() {
         
         # Run migrations
         echo "Step 3: Running database migrations..."
-        docker compose exec -T django python manage.py migrate --noinput || {
+        docker compose exec -T django uv run python manage.py migrate --noinput || {
             echo "Error: Failed to run migrations"
             exit 1
         }
@@ -92,7 +92,7 @@ deploy() {
         
         # Collect static files
         echo "Step 4: Collecting static files..."
-        docker compose exec -T django python manage.py collectstatic --noinput || {
+        docker compose exec -T django uv run python manage.py collectstatic --noinput || {
             echo "Error: Failed to collect static files"
             exit 1
         }
