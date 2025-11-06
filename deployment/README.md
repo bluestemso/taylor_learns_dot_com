@@ -8,8 +8,8 @@ Your server uses:
 - **Docker Compose** for service orchestration
 - **Nginx Proxy Manager** (running in Docker) for reverse proxy
 - **Docker network**: `app-stack_app-network`
-- **Existing services**: n8n, OpenWebUI, MCP Proxy
-- **Ports**: 80, 443 (NPM), 8000 (mcp-proxy), 8080 (open-webui)
+- **Existing services**: n8n, OpenWebUI
+- **Ports**: 80, 443 (NPM), 8080 (open-webui)
 
 ## Deployment Options
 
@@ -234,33 +234,139 @@ sudo systemctl restart taylorlearns
 
 ## GitHub Actions CI/CD
 
-### Docker Deployment
+The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automatically deploys to your server when you push to the `main` branch.
 
-Update `.github/workflows/deploy.yml` to work with Docker:
+### How It Works
 
-```yaml
-- name: Deploy to server
-  run: |
-    ssh $VPS_USER@$VPS_HOST << 'ENDSSH'
-      cd ~/app-stack/taylor_learns_dot_com
-      git pull origin main
-      docker-compose build django
-      docker-compose exec django python manage.py migrate --noinput
-      docker-compose exec django python manage.py collectstatic --noinput
-      docker-compose restart django
-    ENDSSH
-```
+1. **Automatic Deployment**: When you push to `main`, the workflow:
+   - Connects to your server via SSH
+   - Pulls the latest code from the repository
+   - Builds the Docker image
+   - Runs database migrations
+   - Collects static files
+   - Restarts the Django service
 
-### Host Deployment
-
-Use the existing workflow as-is, but ensure it runs from the correct directory.
+2. **Manual Trigger**: You can also manually trigger deployments from the GitHub Actions tab.
 
 ### Required GitHub Secrets
 
-- `SSH_PRIVATE_KEY`: Private SSH key for deployment
-- `VPS_HOST`: Your VPS IP (`65.109.139.248`)
-- `VPS_USER`: Your username (`tschaack`)
-- `VPS_APP_DIR`: Path to your app (e.g., `~/app-stack/taylor_learns_dot_com`)
+Configure these secrets in your GitHub repository settings (Settings → Secrets and variables → Actions):
+
+- `SSH_PRIVATE_KEY`: Private SSH key for deployment (the private key that corresponds to a public key on your server)
+- `VPS_HOST`: Your VPS IP address (e.g., `65.109.139.248`)
+- `VPS_USER`: Your server username (e.g., `tschaack`)
+- `VPS_APP_DIR`: Path to your app stack directory (e.g., `/home/tschaack/app-stack`)
+
+### Setting Up SSH Key
+
+1. Generate an SSH key pair if you don't have one:
+   ```bash
+   ssh-keygen -t ed25519 -C "github-actions"
+   ```
+
+2. Copy the public key to your server:
+   ```bash
+   ssh-copy-id -i ~/.ssh/id_ed25519.pub tschaack@65.109.139.248
+   ```
+
+3. Add the private key to GitHub Secrets:
+   - Copy the private key: `cat ~/.ssh/id_ed25519`
+   - Go to GitHub → Settings → Secrets → New repository secret
+   - Name: `SSH_PRIVATE_KEY`
+   - Value: Paste the entire private key (including `-----BEGIN` and `-----END` lines)
+
+---
+
+## Remote Development Workflow
+
+You can develop and deploy the application from your local machine without needing to SSH into the server for routine deployments.
+
+### Automated Deployment (Recommended)
+
+**Workflow**: Develop locally → Push to GitHub → Automatic deployment
+
+1. **Develop Locally**:
+   ```bash
+   # Make your changes locally
+   git add .
+   git commit -m "Your changes"
+   git push origin main
+   ```
+
+2. **Automatic Deployment**:
+   - GitHub Actions automatically detects the push
+   - Deploys to your server
+   - You can monitor progress in the GitHub Actions tab
+
+3. **Verify Deployment**:
+   - Check the GitHub Actions workflow status
+   - Visit https://taylorlearns.com to verify changes
+
+### Manual Deployment Script
+
+For quick deployments without pushing to GitHub, use the manual deployment script:
+
+**Usage**:
+```bash
+# From your local machine
+cd /path/to/taylor_learns_dot_com
+./deployment/deploy.sh
+```
+
+**Configuration**:
+The script uses environment variables (with defaults):
+- `VPS_HOST`: Server IP (default: `65.109.139.248`)
+- `VPS_USER`: Server username (default: `tschaack`)
+- `APP_STACK_DIR`: App stack directory (default: `/home/tschaack/app-stack`)
+
+**Example with custom settings**:
+```bash
+VPS_HOST=your-server-ip VPS_USER=your-username ./deployment/deploy.sh
+```
+
+**What the script does**:
+1. Connects to your server via SSH
+2. Pulls latest code from the repository
+3. Builds the Docker image
+4. Runs database migrations
+5. Collects static files
+6. Restarts the Django service
+7. Performs a health check
+
+**Requirements**:
+- SSH access to the server (SSH key configured)
+- Server must have `docker-compose` installed
+- Repository must be cloned on the server
+
+### Development Workflow Tips
+
+1. **Test Locally First**: Always test changes locally before pushing
+2. **Use Feature Branches**: Create feature branches and test before merging to `main`
+3. **Monitor Deployments**: Check GitHub Actions logs if deployment fails
+4. **Database Migrations**: The workflow automatically runs migrations, but review them first
+5. **Static Files**: Static files are automatically collected during deployment
+
+### Troubleshooting Remote Deployment
+
+**Deployment fails with SSH error**:
+- Verify SSH key is correctly configured in GitHub Secrets
+- Test SSH connection manually: `ssh tschaack@65.109.139.248`
+- Ensure the public key is in `~/.ssh/authorized_keys` on the server
+
+**Docker build fails**:
+- Check Docker is running on the server: `docker ps`
+- Verify `docker-compose.yml` is in the correct location
+- Check server disk space: `df -h`
+
+**Migrations fail**:
+- Review migration files before pushing
+- Check database connection in `.env` file
+- Verify database container is running: `docker-compose ps postgres`
+
+**Service won't restart**:
+- Check container logs: `docker-compose logs django`
+- Verify environment variables are set correctly
+- Check for port conflicts: `docker-compose ps`
 
 ---
 
@@ -389,7 +495,7 @@ docker-compose exec django ls -la /app/staticfiles/
 
 ### Port Conflicts
 
-If port 8000 is already in use (by mcp-proxy), you can:
+If port 8000 is already in use, you can:
 
 1. **Change Django port** in docker-compose.yml:
    ```yaml

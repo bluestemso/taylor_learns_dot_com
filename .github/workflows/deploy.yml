@@ -30,30 +30,31 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
         run: |
-          APP_DIR="${VPS_APP_DIR:-/home/taylorlearns/taylor_learns_dot_com}"
-          ssh $VPS_USER@$VPS_HOST "APP_DIR='$APP_DIR' bash -s" << 'ENDSSH'
+          APP_STACK_DIR="${VPS_APP_DIR:-/home/tschaack/app-stack}"
+          APP_DIR="$APP_STACK_DIR/taylor_learns_dot_com"
+          ssh $VPS_USER@$VPS_HOST "APP_STACK_DIR='$APP_STACK_DIR' APP_DIR='$APP_DIR' bash -s" << 'ENDSSH'
             set -e
-            cd "$APP_DIR" || exit 1
+            cd "$APP_STACK_DIR" || exit 1
             
             echo "Pulling latest code..."
+            cd "$APP_DIR" || exit 1
             git pull origin main
+            cd "$APP_STACK_DIR"
             
-            echo "Installing/updating dependencies with uv..."
-            export PATH="$HOME/.cargo/bin:$PATH"
-            uv sync
+            echo "Building Docker image..."
+            docker-compose build django
             
             echo "Running database migrations..."
-            source .venv/bin/activate
-            python manage.py migrate --noinput
+            docker-compose exec -T django python manage.py migrate --noinput
             
             echo "Collecting static files..."
-            python manage.py collectstatic --noinput
+            docker-compose exec -T django python manage.py collectstatic --noinput
             
-            echo "Restarting Gunicorn service..."
-            sudo systemctl restart taylorlearns
+            echo "Restarting Django service..."
+            docker-compose restart django
             
             echo "Checking service status..."
-            sudo systemctl status taylorlearns --no-pager || true
+            docker-compose ps django || true
             
             echo "Deployment complete!"
           ENDSSH
