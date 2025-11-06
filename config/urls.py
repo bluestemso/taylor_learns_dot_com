@@ -168,7 +168,8 @@ urlpatterns = [
     path("admin/bulk-tag/", blog_views.bulk_tag, name="bulk_tag"),
     path("api/add-tag/", blog_views.api_add_tag, name="api_add_tag"),
     re_path(r"^admin/", admin.site.urls),
-    re_path(r"^static/", static_redirect),
+    # Static files are now served by WhiteNoise, not redirected
+    # re_path(r"^static/", static_redirect),
     path("dashboard/", include(django_sql_dashboard.urls)),
     path("user-from-cookies/", blog_views.user_from_cookies),
     path("tags-autocomplete/", tag_views.tags_autocomplete),
