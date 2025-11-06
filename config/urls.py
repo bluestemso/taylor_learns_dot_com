@@ -58,9 +58,6 @@ def projects_redirect(request):
     )
 
 
-FAVICON = open(os.path.join(settings.BASE_DIR, "static/favicon.ico"), "rb").read()
-
-
 def static_redirect(request):
     return HttpResponsePermanentRedirect(
         "http://static.simonwillison.net%s" % request.get_full_path()
@@ -100,7 +97,18 @@ def robots_txt(request):
 
 
 def favicon_ico(request):
-    return HttpResponse(FAVICON, content_type="image/x-icon")
+    # Read the favicon file on each request to ensure we serve the latest version
+    favicon_path = os.path.join(settings.BASE_DIR, "static/favicon.ico")
+    try:
+        with open(favicon_path, "rb") as f:
+            favicon_data = f.read()
+        response = HttpResponse(favicon_data, content_type="image/x-icon")
+        # Add cache headers - allow caching but with a reasonable max-age
+        # This helps with performance while still allowing updates
+        response["Cache-Control"] = "public, max-age=86400"  # 24 hours
+        return response
+    except FileNotFoundError:
+        return HttpResponse(status=404)
 
 
 @never_cache
