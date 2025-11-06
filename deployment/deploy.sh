@@ -7,7 +7,7 @@
 # Requirements:
 # - SSH access to the server
 # - SSH key configured in ~/.ssh/config or use environment variables
-# - Server must have docker-compose installed
+# - Server must have Docker with compose plugin installed
 
 set -e  # Exit on error
 
@@ -74,7 +74,7 @@ deploy() {
         
         # Build Docker image
         echo "Step 2: Building Docker image..."
-        docker-compose build django || {
+        docker compose build django || {
             echo "Error: Failed to build Docker image"
             exit 1
         }
@@ -83,7 +83,7 @@ deploy() {
         
         # Run migrations
         echo "Step 3: Running database migrations..."
-        docker-compose exec -T django python manage.py migrate --noinput || {
+        docker compose exec -T django python manage.py migrate --noinput || {
             echo "Error: Failed to run migrations"
             exit 1
         }
@@ -92,7 +92,7 @@ deploy() {
         
         # Collect static files
         echo "Step 4: Collecting static files..."
-        docker-compose exec -T django python manage.py collectstatic --noinput || {
+        docker compose exec -T django python manage.py collectstatic --noinput || {
             echo "Error: Failed to collect static files"
             exit 1
         }
@@ -101,7 +101,7 @@ deploy() {
         
         # Restart Django service
         echo "Step 5: Restarting Django service..."
-        docker-compose restart django || {
+        docker compose restart django || {
             echo "Error: Failed to restart Django service"
             exit 1
         }
@@ -110,7 +110,7 @@ deploy() {
         
         # Check service status
         echo "Step 6: Checking service status..."
-        docker-compose ps django
+        docker compose ps django
         echo ""
         
         echo "=========================================="
