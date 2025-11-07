@@ -10,17 +10,22 @@
 {% endblock %}
 
 {% block primary %}
-<h2 class="overband">Recent</h2>
+<h2 class="ttu f5 newgreen tracked b mb4">Latest Writing</h2>
 
 {% load blog_tags %}
 {% blog_mixed_list_with_dates items day_headers=1 %}
-{% endblock %}
 
-{% block secondary %}
-<h2 class="overband">Highlights</h2>
-<ul>
-{% for entry in entries %}
-  <li><a href="{{ entry.get_absolute_url }}">{{ entry }}</a> - {{ entry.created.date }}</li>
-{% endfor %}
-</ul>
+{% if entries %}
+<div class="mt5 pt4" style="border-top: 1px solid #ccc;">
+  <h3 class="ttu f5 newgreen tracked b mb3">Highlights</h3>
+  <ul style="list-style: none; padding: 0;">
+  {% for entry in entries %}
+    <li class="mb2" style="list-style-type: square; margin-left: 1em;">
+      <a href="{{ entry.get_absolute_url }}">{{ entry }}</a>
+      <span class="black-50 f6">- {{ entry.created.date }}</span>
+    </li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
 {% endblock %}
