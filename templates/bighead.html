@@ -2,31 +2,62 @@
 {% load static %}
 
 {% block body %}
-<div id="bighead">
-  <a id="atomfeedlink" href="/atom/everything/" title="My Atom feed"><img src="{% static 'css/img/feed-icon.svg' %}" alt="Atom feed" width="14" height="14"></a> 
-  <div id="h1-nav-wrapper">
-    <h1>Taylor Learns</h1>
+<!-- Fixed Sidebar Navigation -->
+<aside class="sidebar-nav bg-near-white">
+  <div class="pv4 ph3">
+    <h1 class="f3 fw8 mb4"><a href="/" class="link-black" style="text-decoration: none; box-shadow: none;">Taylor Learns</a></h1>
+
     <nav>
-      <ul>
-        <li><a href="/about/">About</a></li>
-      </ul>
+      <a href="/" class="nav-item">
+        <span class="navname">Home</span>
+      </a>
+      <a href="/about/" class="nav-item">
+        <span class="navname">About</span>
+      </a>
+      <a href="/tags/" class="nav-item">
+        <span class="navname">Tags</span>
+      </a>
+      <a href="/atom/everything/" class="nav-item" title="Atom feed">
+        <span class="navname">Feed</span>
+      </a>
     </nav>
+
+    <!-- Search Bar in Sidebar -->
+    <div class="search-wrapper">
+      {% include "includes/search_bar.html" %}
+    </div>
   </div>
-  <div id="bigheadcontainer">
-  {% if current_tags %}<p id="currenttags">On {% for tag in current_tags %}<a href="/tags/{{ tag }}/" class="item-tag">{{ tag }} <span>{{ tag.total_count }}</span></a> {% endfor %}<a href="/tags/" class="more">...</a></p>{% else %}<a href="/tags/">Tags...</a>{% endif %}
-  {% include "includes/search_bar.html" with wrapper_style="margin-top: 0.5em" %}
-  </div><!-- #bigheadcontainer -->
-</div><!-- #bighead -->
+</aside>
 
-<div id="band">&nbsp;</div>
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <h1 class="f4 fw8"><a href="/" style="text-decoration: none; color: inherit;">Taylor Learns</a></h1>
+  <button class="hamburger-button" id="hamburger-btn" aria-label="Toggle menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+</div>
 
-<div id="wrapper">
-<div id="primary">
-{% block primary %}{% endblock %}
-</div> <!-- #primary -->
+<!-- Mobile Overlay -->
+<div class="mobile-overlay" id="mobile-overlay"></div>
 
-<div id="secondary">
-{% block secondary %}{% endblock %}
-</div> <!-- #secondary -->
-</div> <!-- #wrapper -->
+<!-- Main Content Area -->
+<div class="sidebar-layout">
+  <div class="pt4 pt5-l pb2 w-two-thirds-ns center">
+    <div class="f4 ph3 pb4 ph0-l lh-copy">
+      {% if current_tags %}
+      <p id="currenttags" class="mb3">
+        <span class="ttu f5 newgreen tracked b">Tagged:</span>
+        {% for tag in current_tags %}
+          <a href="/tags/{{ tag }}/" class="item-tag">{{ tag }} <span>{{ tag.total_count }}</span></a>
+        {% endfor %}
+        <a href="/tags/" class="more">...</a>
+      </p>
+      {% endif %}
+
+      {% block primary %}{% endblock %}
+    </div>
+  </div>
+</div>
 {% endblock %}

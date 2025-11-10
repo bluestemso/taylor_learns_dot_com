@@ -13,12 +13,20 @@
 
 {% block item_content %}
 <div data-permalink-context="{{ entry.get_absolute_url }}">
-<h2>{{ entry.title|typography }}</h2>
-<p class="mobile-date">{{ entry.created|date:"jS F Y" }}</p>
+<!-- Date Header with blue border -->
+<div class="bb b--newgreen w-100 ibmplexmono ttu f6 dt-published mb5">
+  {{ entry.created|date:"F j, Y" }}
+</div>
+
+<!-- Post Title -->
+<h1 class="f2 fw8 lh-solid mv1 posttitle">{{ entry.title|typography }}</h1>
 
 {% include "_draft_warning.html" %}
 
+<!-- Post Content -->
+<div class="postcontainer">
 {{ entry.body_rendered|xhtml|resize_images_to_fit_width:"450"|typography|xhtml2html }}
+</div>
 
 {% if updates %}
 <div id="live-updates">
@@ -26,7 +34,10 @@
 </div>
 {% endif %}
 </div>
-<div class="entryFooter">Posted <a href="/{{ entry.created|date:"Y/M/j/" }}">{{ entry.created|date:"jS F Y" }}</a> at {{ entry.created|date:"f A"|lower }}</div>
+
+<div class="entryFooter mt4 pt3" style="border-top: 1px solid #0066cc; font-size: 0.875rem; color: rgba(0,0,0,0.5);">
+Posted <a href="/{{ entry.created|date:"Y/M/j/" }}">{{ entry.created|date:"jS F Y" }}</a> at {{ entry.created|date:"f A"|lower }}
+</div>
 <p class="edit-page-link" data-admin-url="{{ entry.edit_url }}" style="display: none;"></p>
 {% endblock %}
 
