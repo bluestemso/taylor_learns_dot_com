@@ -57,11 +57,8 @@ templates/
 ### Design Documentation
 
 ```
-DESIGN_SYSTEM.md              # Original design system documentation
-TAILWIND_SETUP.md             # Tailwind configuration notes
-FRONTEND_DESIGN_GUIDE.md      # This guide
-tailwind.config.js            # Tailwind config (for reference)
-tailwind-base.css             # Base Tailwind styles (for reference)
+FRONTEND_DESIGN_GUIDE.md      # This guide (you're reading it!)
+static/css/design-system.css  # Main stylesheet
 ```
 
 ---
@@ -569,10 +566,10 @@ When making design changes:
 
 ### Design System Resources
 
-- **Full design specs**: `DESIGN_SYSTEM.md`
-- **Tailwind reference**: `TAILWIND_SETUP.md`
-- **Color palette**: `:root` in `design-system.css`
+- **Main stylesheet**: `static/css/design-system.css`
+- **Color palette**: `:root` selector in `design-system.css`
 - **Utility classes**: Throughout `design-system.css`
+- **Component styles**: Organized sections in `design-system.css`
 
 ---
 
@@ -629,7 +626,8 @@ If you need to make design changes and aren't sure how:
 | 2025-11-07 | Blue theme implementation | Claude |
 | 2025-11-07 | Mobile hamburger menu added | Claude |
 | 2025-11-07 | Search bar icon implementation | Claude |
+| 2025-11-10 | Removed Tailwind references, simplified guide | Claude |
 
 ---
 
-*Last updated: November 7, 2025*
+*Last updated: November 10, 2025*
