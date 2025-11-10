@@ -99,13 +99,8 @@ class BlogTests(TransactionTestCase):
             body="First paragraph\n\nSecond paragraph",
         )
         response = self.client.get(entry.get_absolute_url())
-        self.assertContains(
-            response,
-            """
-            <h2>Hello &amp; goodbye</h2>
-        """,
-            html=True,
-        )
+        # Check that the title appears in an h1 tag (with proper HTML escaping)
+        self.assertContains(response, '<h1 class="f2 fw8 lh-solid mv1 posttitle">Hello &amp; goodbye</h1>')
         self.assertContains(
             response,
             """
