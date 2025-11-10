@@ -16,7 +16,7 @@ A Django-based blog application built on foundations originally developed by Sim
 - **Gunicorn** - Production WSGI server
 - **WhiteNoise** - Static file serving with content hashing
 - **Playwright** - End-to-end testing framework
-- **Tailwind CSS** - Frontend styling (config available but uses custom CSS system)
+- **Custom CSS** - Design system built with CSS custom properties
 
 ## Development Commands
 
@@ -177,20 +177,18 @@ Templates use Django Template Language (NOT Jinja2):
 
 ### Frontend Architecture
 
-The blog uses a **custom CSS design system** with CSS custom properties (variables), NOT Tailwind in production:
+The blog uses a **custom CSS design system** built with CSS custom properties:
 
 - **Main stylesheet:** `static/css/design-system.css`
-- **Color theme:** Blue accent (#0066cc primary)
-- **Typography:** Libre Franklin (sans-serif), IBM Plex Mono (monospace)
+- **Color theme:** Purple gradient header (#6b2d8a) with blue links (#0066cc)
+- **Typography:** Helvetica Neue (sans-serif), IBM Plex Mono (monospace)
 - **Layout:** Fixed sidebar (223px) with responsive mobile hamburger menu
 - **Breakpoint:** 1024px (mobile vs desktop)
 
 ### Key Design Files
 
-- `DESIGN_SYSTEM.md` - Complete design system reference (originally based on Tom Critchlow's design)
-- `FRONTEND_DESIGN_GUIDE.md` - Guide for making frontend changes
-- `tailwind.config.js` - Tailwind config (reference only, not used in production)
-- `static/css/design-system.css` - All CSS with custom properties and utility classes
+- `FRONTEND_DESIGN_GUIDE.md` - Complete guide for making frontend changes
+- `static/css/design-system.css` - Main stylesheet with custom properties and utility classes
 
 ### Making Design Changes
 
@@ -349,8 +347,5 @@ Custom admin in `blog/admin.py` provides:
 ## Additional Documentation
 
 - `README.md` - Full project documentation and development practices
-- `DESIGN_SYSTEM.md` - Complete design system reference
-- `FRONTEND_DESIGN_GUIDE.md` - Frontend modification guide
-- `TAILWIND_SETUP.md` - Tailwind configuration notes (reference only)
+- `FRONTEND_DESIGN_GUIDE.md` - Frontend design system guide
 - `tests/README.md` - Playwright testing documentation
-- `deployment/README.md` - Deployment-specific documentation
