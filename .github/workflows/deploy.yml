@@ -40,6 +40,9 @@ jobs:
             cd "$APP_DIR" || exit 1
             git pull origin main
 
+            echo "Returning to app stack directory for docker compose commands..."
+            cd "$APP_STACK_DIR"
+
             echo "Building Docker image..."
             docker compose build django
 
