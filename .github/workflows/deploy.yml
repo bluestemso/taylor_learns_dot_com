@@ -43,15 +43,12 @@ jobs:
             
             echo "Building Docker image..."
             docker compose build django
-            
+
+            echo "Recreating Django service with new image..."
+            docker compose up -d --no-deps --force-recreate django
+
             echo "Running database migrations..."
             docker compose exec -T django uv run python manage.py migrate --noinput
-            
-            echo "Collecting static files..."
-            docker compose exec -T django uv run python manage.py collectstatic --noinput
-            
-            echo "Restarting Django service..."
-            docker compose restart django
             
             echo "Checking service status..."
             docker compose ps django || true
