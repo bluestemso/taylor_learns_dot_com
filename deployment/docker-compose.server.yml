@@ -96,7 +96,8 @@ services:
       - SENTRY_DSN=${SENTRY_DSN:-}
       - SCREENSHOT_SECRET=${SCREENSHOT_SECRET:-}
     volumes:
-      - django_static:/app/staticfiles
+      # Static files are baked into the Docker image, served by WhiteNoise
+      # Only mount media directory for user uploads
       - django_media:/app/media
     networks:
       - app-network
@@ -113,7 +114,6 @@ volumes:
   n8n_data:
   openwebui_data:
   postgres_data:     # Persistent database storage
-  django_static:     # Django static files (CSS, JS, images)
   django_media:      # User-uploaded media files
 
 networks:

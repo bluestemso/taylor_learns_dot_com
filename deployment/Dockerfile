@@ -133,6 +133,7 @@ USER django
 RUN mkdir -p /app/staticfiles /app/media && \
     # ↑ Create directories for static files and user uploads
     DJANGO_SECRET=build-time-secret \
+    DATABASE_URL=postgresql://placeholder:placeholder@placeholder:5432/placeholder \
     DB_NAME=placeholder \
     DB_USER=placeholder \
     DB_PASSWORD=placeholder \
