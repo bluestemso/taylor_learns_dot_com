@@ -47,8 +47,5 @@ Thumbs.db
 # Old imports
 old-import-xml/
 
-# Lock files (we copy uv.lock explicitly)
-uv.lock
-
 
 
