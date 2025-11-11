@@ -31,8 +31,15 @@ RUN uv sync --frozen
 # Copy project
 COPY . .
 
-# Collect static files (will be done at runtime, but prepare the structure)
-RUN mkdir -p /app/staticfiles /app/media
+# Collect static files during build so they're part of the image
+# Set minimal environment variables required for collectstatic
+ENV DJANGO_SECRET=build-time-secret \
+    DB_NAME=placeholder \
+    DB_USER=placeholder \
+    DB_PASSWORD=placeholder \
+    DB_HOST=placeholder
+RUN mkdir -p /app/staticfiles /app/media && \
+    uv run python manage.py collectstatic --noinput
 
 # Create non-root user
 RUN useradd -m -u 1000 django && \
