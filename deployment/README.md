@@ -1,621 +1,558 @@
 # Deployment Guide for taylorlearns.com
 
-This guide explains how to deploy the taylorlearns.com Django blog to a Hetzner VPS using Docker Compose with Nginx Proxy Manager.
+This guide explains the deployment architecture and how to set up both local development and production environments.
 
-## Current Server Setup
+## Architecture Overview
 
-Your server uses:
-- **Docker Compose** for service orchestration
-- **Nginx Proxy Manager** (running in Docker) for reverse proxy
-- **Docker network**: `app-stack_app-network`
-- **Existing services**: n8n, OpenWebUI
-- **Ports**: 80, 443 (NPM), 8080 (open-webui)
+### Local Development
+- **Purpose**: Fully self-contained development environment
+- **File**: `docker-compose.yml` in repository root
+- **Components**: Django + its own PostgreSQL instance
+- **Network**: Local bridge network
+- **How to use**: `docker compose up` in the repository
 
-## Deployment Options
-
-You have two deployment options:
-
-1. **Docker Deployment** (Recommended) - Run Django in Docker alongside your other services
-2. **Host Deployment** - Run Django directly on the host with systemd
-
-This guide covers both options.
+### Production (VPS)
+- **Purpose**: Multi-app production environment
+- **File**: `/home/tschaack/app-stack/docker-compose.yml` on server
+- **Components**:
+  - Django (pulls pre-built image from GitHub Container Registry)
+  - PostgreSQL (shared across all apps)
+  - Nginx Proxy Manager (reverse proxy with SSL)
+  - n8n (workflow automation)
+  - OpenWebUI (AI interface)
+- **Image Source**: `ghcr.io/bluestemso/taylor_learns_dot_com:latest`
+- **Deployment**: Automatic via GitHub Actions on push to `main`
 
 ---
 
-## Option 1: Docker Deployment (Recommended)
+## Local Development Setup
 
-### 1. Clone the Repository
+### 1. Prerequisites
+- Docker and Docker Compose installed
+- Git
+
+### 2. Clone and Configure
 
 ```bash
-cd ~/app-stack
-git clone <your-repo-url> taylor_learns_dot_com
+# Clone the repository
+git clone https://github.com/bluestemso/taylor_learns_dot_com.git
 cd taylor_learns_dot_com
+
+# Create environment file
+cp .env.example .env
+
+# Edit .env and set required variables:
+# - DB_PASSWORD (any password for local development)
+# - DJANGO_SECRET (generate with: python -c "import secrets; print(secrets.token_urlsafe(50))")
+nano .env
 ```
 
-### 2. Add Services to docker-compose.yml
-
-You can either:
-- **A)** Add the services to your existing `~/app-stack/docker-compose.yml`
-- **B)** Create a separate stack for the blog
-
-**Option A: Add to existing docker-compose.yml**
+### 3. Start Development Environment
 
 ```bash
-cd ~/app-stack
-# Copy the services from deployment/docker-compose.yml
-# Add them to your existing docker-compose.yml
+# Start all services (Django + PostgreSQL)
+docker compose up -d
+
+# Run initial migrations
+docker compose exec django uv run python manage.py migrate
+
+# Create a superuser (optional)
+docker compose exec django uv run python manage.py createsuperuser
+
+# Access the site
+open http://localhost:8000
 ```
 
-**Option B: Create separate stack**
+### 4. Development Commands
 
 ```bash
-cd ~/app-stack
-mkdir taylorlearns
-cd taylorlearns
-cp ../taylor_learns_dot_com/deployment/docker-compose.yml .
-cp ../taylor_learns_dot_com/deployment/Dockerfile .
-cp ../taylor_learns_dot_com/deployment/.dockerignore .
-```
-
-### 3. Create Environment File
-
-Create a `.env` file in the same directory as `docker-compose.yml`:
-
-```bash
-cat > .env << EOF
-# Database Configuration
-DB_NAME=taylorlearnsblog
-DB_USER=taylorlearns
-DB_PASSWORD=your-secure-password-here
-
-# Django Configuration
-DJANGO_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
-DJANGO_DEBUG=False
-ALLOWED_HOSTS=taylorlearns.com,www.taylorlearns.com
-CSRF_TRUSTED_ORIGINS=https://taylorlearns.com,https://www.taylorlearns.com
-
-# Optional
-CLOUDFLARE_EMAIL=your-email@example.com
-CLOUDFLARE_TOKEN=your-token
-CLOUDFLARE_ZONE_ID=your-zone-id
-SENTRY_DSN=your-sentry-dsn
-EOF
-```
-
-### 4. Build and Start Services
-
-```bash
-docker-compose up -d --build
-```
-
-### 5. Run Initial Migrations
-
-```bash
-docker-compose exec django uv run python manage.py migrate
-docker-compose exec django uv run python manage.py collectstatic --noinput
-```
-
-### 6. Create Superuser (Optional)
-
-```bash
-docker-compose exec django uv run python manage.py createsuperuser
-```
-
-### 7. Configure Nginx Proxy Manager
-
-1. Access Nginx Proxy Manager at `http://your-vps-ip:81`
-2. Login (default: `admin@example.com` / `changeme`)
-3. Go to **Proxy Hosts** → **Add Proxy Host**
-4. Configure:
-   - **Domain Names**: `taylorlearns.com`, `www.taylorlearns.com`
-   - **Scheme**: `http`
-   - **Forward Hostname/IP**: `django` (or service name if separate stack)
-   - **Forward Port**: `8000`
-   - **SSL**: Enable SSL, request new certificate with Let's Encrypt
-   - **Advanced**: Add custom headers if needed
-
-### 8. Verify Deployment
-
-```bash
-# Check container status
-docker-compose ps
-
 # View logs
-docker-compose logs -f django
-docker-compose logs -f postgres
+docker compose logs -f django
 
-# Test the application
-curl http://localhost:8000
-```
+# Run migrations after model changes
+docker compose exec django uv run python manage.py makemigrations
+docker compose exec django uv run python manage.py migrate
 
-### 9. Update Deployment
+# Access Django shell
+docker compose exec django uv run python manage.py shell
 
-```bash
-cd ~/app-stack/taylor_learns_dot_com  # or your repo location
-git pull origin main
-docker-compose build django
-docker-compose exec django uv run python manage.py migrate --noinput
-docker-compose exec django uv run python manage.py collectstatic --noinput
-docker-compose restart django
+# Run tests
+docker compose exec django uv run python manage.py test
+
+# Restart Django
+docker compose restart django
+
+# Stop all services
+docker compose down
 ```
 
 ---
 
-## Option 2: Host Deployment (Alternative)
+## Production Server Setup
 
-If you prefer to run Django directly on the host instead of Docker:
+### Initial Server Setup (One-Time)
 
-### 1. Install System Dependencies
+#### 1. Update Server's docker-compose.yml
+
+Your server's docker-compose file at `/home/tschaack/app-stack/docker-compose.yml` should use the template from `deployment/docker-compose.server.yml`.
+
+Key differences from local setup:
+- Django service uses `image: ghcr.io/bluestemso/taylor_learns_dot_com:latest` (pre-built)
+- Shares PostgreSQL with other apps
+- Connected to Nginx Proxy Manager network
+
+#### 2. Create Production Environment File
+
+On your server:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y python3 python3-pip python3-venv postgresql postgresql-contrib curl build-essential libpq-dev
+cd /home/tschaack/app-stack
+nano .env
 ```
 
-### 2. Install uv
+Use `deployment/.env.server.example` as a template. Required variables:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-export PATH="$HOME/.cargo/bin:$PATH"
-```
+# Generate secure values:
+DB_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+DJANGO_SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
 
-### 3. Set Up PostgreSQL
-
-```bash
-sudo -u postgres psql << EOF
-CREATE USER taylorlearns WITH PASSWORD 'your-secure-password';
-CREATE DATABASE taylorlearnsblog OWNER taylorlearns;
-ALTER DATABASE taylorlearnsblog SET timezone TO 'UTC';
-EOF
-```
-
-### 4. Clone Repository
-
-```bash
-cd ~
-git clone <your-repo-url> taylor_learns_dot_com
-cd taylor_learns_dot_com
-```
-
-### 5. Install Dependencies
-
-```bash
-export PATH="$HOME/.cargo/bin:$PATH"
-uv sync
-```
-
-### 6. Configure Environment
-
-```bash
-cat > .env << EOF
-DATABASE_URL=postgresql://taylorlearns:your-password@localhost:5432/taylorlearnsblog
-DJANGO_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
+# Required settings
 DJANGO_DEBUG=False
 ALLOWED_HOSTS=taylorlearns.com,www.taylorlearns.com
 CSRF_TRUSTED_ORIGINS=https://taylorlearns.com,https://www.taylorlearns.com
-EOF
-
-source .venv/bin/activate
-python manage.py migrate
-python manage.py collectstatic --noinput
 ```
 
-### 7. Set Up systemd Service
+#### 3. Configure GitHub Container Registry Access
+
+Make the GitHub Container Registry package public, OR configure server authentication:
+
+**Option A: Make Package Public (Easiest)**
+1. Go to https://github.com/users/bluestemso/packages/container/taylor_learns_dot_com/settings
+2. Change visibility to "Public"
+
+**Option B: Authenticate Server (Private Packages)**
+```bash
+# On your VPS
+echo $GITHUB_TOKEN | docker login ghcr.io -u bluestemso --password-stdin
+```
+
+#### 4. Start Services
 
 ```bash
-sudo cp deployment/gunicorn.service /etc/systemd/system/taylorlearns.service
-sudo systemctl daemon-reload
-sudo systemctl enable taylorlearns
-sudo systemctl start taylorlearns
+cd /home/tschaack/app-stack
+
+# Pull the latest image
+docker pull ghcr.io/bluestemso/taylor_learns_dot_com:latest
+
+# Start all services
+docker compose up -d
+
+# Run initial migrations
+docker compose exec django uv run python manage.py migrate
+
+# Check status
+docker compose ps
+docker compose logs django
 ```
 
-### 8. Configure Nginx Proxy Manager
+#### 5. Configure Nginx Proxy Manager
 
-1. Access NPM at `http://your-vps-ip:81`
-2. Add Proxy Host:
-   - **Domain Names**: `taylorlearns.com`, `www.taylorlearns.com`
-   - **Forward Hostname/IP**: `localhost` or `127.0.0.1`
-   - **Forward Port**: `8000` (or your Gunicorn port)
-
-### 9. Update Deployment
-
-```bash
-cd ~/taylor_learns_dot_com
-git pull origin main
-export PATH="$HOME/.cargo/bin:$PATH"
-uv sync
-source .venv/bin/activate
-python manage.py migrate --noinput
-python manage.py collectstatic --noinput
-sudo systemctl restart taylorlearns
-```
+1. Access at `http://your-vps-ip:81`
+2. Login (default: `admin@example.com` / `changeme`)
+3. Add Proxy Host:
+   - **Domains**: `taylorlearns.com`, `www.taylorlearns.com`
+   - **Scheme**: `http`
+   - **Forward Hostname**: `django`
+   - **Forward Port**: `8000`
+   - **SSL**: Request Let's Encrypt certificate
+   - **Force SSL**: Enabled
+   - **HTTP/2**: Enabled
 
 ---
 
 ## GitHub Actions CI/CD
 
-The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automatically deploys to your server when you push to the `main` branch.
-
 ### How It Works
 
-1. **Automatic Deployment**: When you push to `main`, the workflow:
-   - Connects to your server via SSH
-   - Pulls the latest code from the repository
-   - Builds the Docker image
-   - Runs database migrations
-   - Collects static files
-   - Restarts the Django service
+The `.github/workflows/deploy.yml` workflow automates deployment:
 
-2. **Manual Trigger**: You can also manually trigger deployments from the GitHub Actions tab.
+**On push to `main` branch:**
+1. **Build Job**:
+   - Builds Docker image with your latest code
+   - Pushes to GitHub Container Registry (ghcr.io)
+   - Tags: `latest`, `main-<sha>`, `main`
+
+2. **Deploy Job** (runs after build):
+   - Connects to VPS via SSH
+   - Pulls new image from registry
+   - Recreates Django container
+   - Runs database migrations
+   - Performs health check
 
 ### Required GitHub Secrets
 
-Configure these secrets in your GitHub repository settings (Settings → Secrets and variables → Actions):
+Configure in GitHub repository Settings → Secrets and variables → Actions:
 
-- `SSH_PRIVATE_KEY`: Private SSH key for deployment (the private key that corresponds to a public key on your server)
-- `VPS_HOST`: Your VPS IP address (e.g., `65.109.139.248`)
-- `VPS_USER`: Your server username (e.g., `tschaack`)
-- `VPS_APP_DIR`: Path to your app stack directory (e.g., `/home/tschaack/app-stack`)
+| Secret | Description | Example |
+|--------|-------------|---------|
+| `SSH_PRIVATE_KEY` | Private SSH key for server access | `-----BEGIN OPENSSH PRIVATE KEY-----\n...` |
+| `VPS_HOST` | Server IP address | `65.109.139.248` |
+| `VPS_USER` | Server username | `tschaack` |
+| `VPS_APP_DIR` | App stack directory path | `/home/tschaack/app-stack` |
+
+**Note**: `GITHUB_TOKEN` is automatically provided by GitHub Actions.
 
 ### Setting Up SSH Key
 
-1. Generate an SSH key pair if you don't have one:
-   ```bash
-   ssh-keygen -t ed25519 -C "github-actions"
-   ```
+```bash
+# On your local machine:
+# 1. Generate SSH key (if you don't have one)
+ssh-keygen -t ed25519 -C "github-actions-deploy"
 
-2. Copy the public key to your server:
-   ```bash
-   ssh-copy-id -i ~/.ssh/id_ed25519.pub tschaack@65.109.139.248
-   ```
+# 2. Copy public key to server
+ssh-copy-id -i ~/.ssh/id_ed25519.pub tschaack@65.109.139.248
 
-3. Add the private key to GitHub Secrets:
-   - Copy the private key: `cat ~/.ssh/id_ed25519`
-   - Go to GitHub → Settings → Secrets → New repository secret
-   - Name: `SSH_PRIVATE_KEY`
-   - Value: Paste the entire private key (including `-----BEGIN` and `-----END` lines)
+# 3. Test connection
+ssh -i ~/.ssh/id_ed25519 tschaack@65.109.139.248
+
+# 4. Add private key to GitHub Secrets
+cat ~/.ssh/id_ed25519
+# Copy the entire output including BEGIN/END lines
+```
+
+### Making GitHub Packages Public
+
+For the workflow to work without additional authentication:
+
+1. Go to https://github.com/bluestemso?tab=packages
+2. Click on `taylor_learns_dot_com`
+3. Package settings → Change visibility → Public
+4. Confirm the change
 
 ---
 
-## Remote Development Workflow
+## Development Workflow
 
-You can develop and deploy the application from your local machine without needing to SSH into the server for routine deployments.
-
-### Automated Deployment (Recommended)
-
-**Workflow**: Develop locally → Push to GitHub → Automatic deployment
-
-1. **Develop Locally**:
-   ```bash
-   # Make your changes locally
-   git add .
-   git commit -m "Your changes"
-   git push origin main
-   ```
-
-2. **Automatic Deployment**:
-   - GitHub Actions automatically detects the push
-   - Deploys to your server
-   - You can monitor progress in the GitHub Actions tab
-
-3. **Verify Deployment**:
-   - Check the GitHub Actions workflow status
-   - Visit https://taylorlearns.com to verify changes
-
-### Manual Deployment Script
-
-For quick deployments without pushing to GitHub, use the manual deployment script:
-
-**Usage**:
-```bash
-# From your local machine
-cd /path/to/taylor_learns_dot_com
-./deployment/deploy.sh
-```
-
-**Configuration**:
-The script uses environment variables (with defaults):
-- `VPS_HOST`: Server IP (default: `65.109.139.248`)
-- `VPS_USER`: Server username (default: `tschaack`)
-- `APP_STACK_DIR`: App stack directory (default: `/home/tschaack/app-stack`)
-
-**Example with custom settings**:
-```bash
-VPS_HOST=your-server-ip VPS_USER=your-username ./deployment/deploy.sh
-```
-
-**What the script does**:
-1. Connects to your server via SSH
-2. Pulls latest code from the repository
-3. Builds the Docker image
-4. Runs database migrations
-5. Collects static files
-6. Restarts the Django service
-7. Performs a health check
-
-**Requirements**:
-- SSH access to the server (SSH key configured)
-- Server must have `docker-compose` installed
-- Repository must be cloned on the server
-
-### Development Workflow Tips
-
-1. **Test Locally First**: Always test changes locally before pushing
-2. **Use Feature Branches**: Create feature branches and test before merging to `main`
-3. **Monitor Deployments**: Check GitHub Actions logs if deployment fails
-4. **Database Migrations**: The workflow automatically runs migrations, but review them first
-5. **Static Files**: Static files are automatically collected during deployment
-
-### Troubleshooting Remote Deployment
-
-**Deployment fails with SSH error**:
-- Verify SSH key is correctly configured in GitHub Secrets
-- Test SSH connection manually: `ssh tschaack@65.109.139.248`
-- Ensure the public key is in `~/.ssh/authorized_keys` on the server
-
-**Docker build fails**:
-- Check Docker is running on the server: `docker ps`
-- Verify `docker-compose.yml` is in the correct location
-- Check server disk space: `df -h`
-
-**Migrations fail**:
-- Review migration files before pushing
-- Check database connection in `.env` file
-- Verify database container is running: `docker-compose ps postgres`
-
-**Service won't restart**:
-- Check container logs: `docker-compose logs django`
-- Verify environment variables are set correctly
-- Check for port conflicts: `docker-compose ps`
-
----
-
-## Cloudflare DNS Configuration
-
-### DNS Records
-
-In Cloudflare dashboard, ensure you have:
-
-- **Type**: A
-- **Name**: `@` (or `taylorlearns.com`)
-- **Content**: `65.109.139.248`
-- **Proxy**: On (orange cloud) recommended
-
-- **Type**: A
-- **Name**: `www`
-- **Content**: `65.109.139.248`
-- **Proxy**: On
-
-### SSL/TLS Settings
-
-- **SSL/TLS encryption mode**: Full (strict) recommended
-- Nginx Proxy Manager will handle Let's Encrypt certificates automatically
-- Ensure DNS is pointing to your server before requesting certificates
-
----
-
-## Service Management
-
-### Docker Services
+### Standard Workflow
 
 ```bash
-# View status
-docker-compose ps
+# 1. Develop locally
+docker compose up -d
+# Make your changes...
 
-# View logs
-docker-compose logs -f django
-docker-compose logs -f postgres
+# 2. Test locally
+docker compose exec django uv run python manage.py test
+npm test  # Run Playwright tests
 
-# Restart service
-docker-compose restart django
+# 3. Commit and push
+git add .
+git commit -m "Your feature description"
+git push origin main
 
-# Stop services
-docker-compose stop
+# 4. GitHub Actions automatically:
+#    - Builds Docker image
+#    - Pushes to ghcr.io
+#    - Deploys to production
 
-# Start services
-docker-compose start
-
-# Rebuild and restart
-docker-compose up -d --build
+# 5. Monitor deployment
+# Check GitHub Actions tab for status
+# Visit https://taylorlearns.com to verify
 ```
 
-### Host Services (systemd)
+### Feature Branch Workflow
 
 ```bash
-# View status
-sudo systemctl status taylorlearns
+# 1. Create feature branch
+git checkout -b feature/my-new-feature
 
-# View logs
-sudo journalctl -u taylorlearns -f
+# 2. Develop and test locally
+docker compose up -d
+# Make changes, test...
 
-# Restart service
-sudo systemctl restart taylorlearns
+# 3. Push feature branch (won't deploy)
+git push origin feature/my-new-feature
+
+# 4. Create PR, review, merge to main
+# Only then will deployment happen automatically
 ```
-
-### Nginx Proxy Manager
-
-Access at `http://your-vps-ip:81` to manage:
-- Proxy hosts
-- SSL certificates
-- Access lists
-- Redirection hosts
 
 ---
 
 ## Troubleshooting
 
-### Container Won't Start
+### Local Development Issues
 
+**Container won't start:**
 ```bash
 # Check logs
-docker-compose logs django
+docker compose logs django
+
+# Rebuild from scratch
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
+```
+
+**Database connection failed:**
+```bash
+# Verify postgres is running
+docker compose ps postgres
+
+# Check postgres logs
+docker compose logs postgres
+
+# Verify DATABASE_URL in container
+docker compose exec django env | grep DATABASE_URL
+```
+
+### Production Deployment Issues
+
+**GitHub Actions build fails:**
+- Check the Actions tab for detailed error logs
+- Verify `deployment/Dockerfile` builds locally: `docker build -f deployment/Dockerfile .`
+- Ensure `uv.lock` is committed to repository
+
+**Image pull fails on server:**
+```bash
+# Check if image exists in registry
+docker pull ghcr.io/bluestemso/taylor_learns_dot_com:latest
+
+# Verify package visibility (should be public or server authenticated)
+# If private, authenticate: echo $TOKEN | docker login ghcr.io -u bluestemso --password-stdin
+```
+
+**Container starts but site is down:**
+```bash
+cd /home/tschaack/app-stack
 
 # Check container status
-docker-compose ps
+docker compose ps django
 
-# Verify environment variables
-docker-compose exec django env | grep DJANGO
+# View logs
+docker compose logs django --tail=100
+
+# Check environment variables
+docker compose exec django env | grep -E 'DJANGO|DB_|ALLOWED'
+
+# Test database connection
+docker compose exec django uv run python manage.py check --database default
+
+# Check nginx proxy manager routing
+curl -H "Host: taylorlearns.com" http://localhost:8000
 ```
 
-### Database Connection Issues
-
+**Migrations fail:**
 ```bash
-# Test PostgreSQL connection
-docker-compose exec postgres psql -U taylorlearns -d taylorlearnsblog
+# Run migrations manually to see detailed errors
+docker compose exec django uv run python manage.py migrate --verbosity 3
 
-# Check database exists
-docker-compose exec postgres psql -U taylorlearns -c "\l"
+# If migrations are stuck, check migration files
+docker compose exec django uv run python manage.py showmigrations
 
-# View PostgreSQL logs
-docker-compose logs postgres
+# Check database connectivity
+docker compose exec postgres psql -U taylorlearns -d taylorlearnsblog -c "\dt"
 ```
 
-### Static Files Not Loading
-
+**Health check fails:**
 ```bash
-# Re-collect static files
-docker-compose exec django uv run python manage.py collectstatic --noinput
+# Test from inside container
+docker compose exec django curl -f http://localhost:8000/
 
-# Check static files volume
-docker-compose exec django ls -la /app/staticfiles/
+# Check gunicorn is running
+docker compose exec django ps aux | grep gunicorn
+
+# Restart service
+docker compose restart django
 ```
 
-### Nginx Proxy Manager Issues
+### Common Configuration Errors
 
-1. Check NPM container is running:
-   ```bash
-   docker ps | grep nginx-proxy-manager
-   ```
-
-2. Access NPM admin panel at `http://your-vps-ip:81`
-
-3. Check proxy host configuration in NPM
-
-4. Verify SSL certificate status in NPM
-
-### Port Conflicts
-
-If port 8000 is already in use, you can:
-
-1. **Change Django port** in docker-compose.yml:
-   ```yaml
-   expose:
-     - "8001"  # Change to different port
-   ```
-
-2. **Update NPM** to point to the new port
-
----
-
-## Backup and Restore
-
-### Database Backup
-
+**Missing environment variables:**
 ```bash
-# Docker
-docker-compose exec postgres pg_dump -U taylorlearns taylorlearnsblog > backup_$(date +%Y%m%d).sql
+# Verify .env file exists
+ls -la /home/tschaack/app-stack/.env
 
-# Host
-sudo -u postgres pg_dump taylorlearnsblog > backup_$(date +%Y%m%d).sql
+# Check required variables
+grep -E 'DB_PASSWORD|DJANGO_SECRET' /home/tschaack/app-stack/.env
+
+# If missing, generate secure values
+python3 -c "import secrets; print('DB_PASSWORD=' + secrets.token_urlsafe(32))"
+python3 -c "import secrets; print('DJANGO_SECRET=' + secrets.token_urlsafe(50))"
 ```
 
-### Database Restore
-
+**Wrong docker-compose file:**
 ```bash
-# Docker
-docker-compose exec -T postgres psql -U taylorlearns taylorlearnsblog < backup_20240101.sql
-
-# Host
-sudo -u postgres psql taylorlearnsblog < backup_20240101.sql
-```
-
-### Volume Backup (Docker)
-
-```bash
-docker run --rm -v app-stack_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup_$(date +%Y%m%d).tar.gz /data
+# Verify you're using the parent docker-compose.yml
+cd /home/tschaack/app-stack
+docker compose config | grep -A 5 django
+# Should show: image: ghcr.io/bluestemso/taylor_learns_dot_com:latest
 ```
 
 ---
 
-## Monitoring
+## Monitoring and Maintenance
 
 ### View Logs
 
 ```bash
-# All services
-docker-compose logs -f
+# Production logs
+ssh tschaack@65.109.139.248
+cd /home/tschaack/app-stack
+docker compose logs -f django
 
-# Specific service
-docker-compose logs -f django
+# Filter for errors
+docker compose logs django | grep -i error
 
-# System logs (host deployment)
-sudo journalctl -u taylorlearns -f
+# Check all services
+docker compose logs -f
 ```
 
-### Resource Usage
+### Database Backup
 
 ```bash
-# Container stats
-docker stats
+# Create backup
+docker compose exec postgres pg_dump -U taylorlearns taylorlearnsblog > backup_$(date +%Y%m%d).sql
 
-# System resources
-htop
-df -h
+# Restore backup
+docker compose exec -T postgres psql -U taylorlearns taylorlearnsblog < backup_20241111.sql
+```
+
+### Update Application
+
+Application updates happen automatically via GitHub Actions. To manually update:
+
+```bash
+cd /home/tschaack/app-stack
+
+# Pull latest image
+docker pull ghcr.io/bluestemso/taylor_learns_dot_com:latest
+
+# Recreate container
+docker compose up -d --no-deps --force-recreate django
+
+# Run migrations
+docker compose exec django uv run python manage.py migrate
+```
+
+### Clean Up Docker
+
+```bash
+# Remove unused images (frees disk space)
+docker image prune -a
+
+# Remove old containers
+docker container prune
+
+# Check disk usage
+docker system df
 ```
 
 ---
 
 ## Security Best Practices
 
-1. **Environment Variables**: Keep `.env` file secure, never commit to git
-2. **Database Passwords**: Use strong, unique passwords
-3. **Django Secret Key**: Generate a unique secret key for production
-4. **Firewall**: Configure UFW if not already set up
-5. **Regular Updates**: Keep Docker images and system packages updated
-6. **SSL**: Always use HTTPS in production (handled by NPM)
-7. **Backups**: Set up automated database backups
+1. **Environment Variables**:
+   - Never commit `.env` files
+   - Use strong, unique secrets for production
+   - Rotate secrets periodically
+
+2. **Django Settings**:
+   - `DJANGO_DEBUG=False` in production
+   - Set proper `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`
+   - Use `SESSION_COOKIE_SECURE=True` (HTTPS only)
+
+3. **Database**:
+   - Strong password (32+ characters)
+   - Regular backups
+   - Persistent volumes (don't use `docker-compose down -v` in production)
+
+4. **SSH Access**:
+   - Use SSH keys, not passwords
+   - Restrict SSH access (fail2ban, firewall rules)
+   - Keep private keys secure
+
+5. **Docker Images**:
+   - Images are public on ghcr.io (code is already public)
+   - Secrets only in environment variables, never in images
+   - Regularly update base images
+
+6. **SSL/TLS**:
+   - Always use HTTPS (handled by Nginx Proxy Manager)
+   - Auto-renewing Let's Encrypt certificates
+   - Force HTTPS redirects
 
 ---
 
-## Maintenance
+## Architecture Diagram
 
-### Update Application
-
-```bash
-cd ~/app-stack/taylor_learns_dot_com
-git pull origin main
-docker-compose build django
-docker-compose exec django uv run python manage.py migrate --noinput
-docker-compose exec django uv run python manage.py collectstatic --noinput
-docker-compose restart django
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                     LOCAL DEVELOPMENT                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  docker-compose.yml (repo root)                              │
+│  ├── django (build from Dockerfile)                          │
+│  └── postgres:15 (local instance)                            │
+│                                                               │
+│  Network: bridge (local)                                     │
+│  Access: http://localhost:8000                               │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
 
-### Update Dependencies
+                            │
+                            │ git push origin main
+                            ▼
 
-```bash
-# Update pyproject.toml locally, then:
-git pull origin main
-docker-compose build --no-cache django
-docker-compose restart django
-```
+┌─────────────────────────────────────────────────────────────┐
+│                     GITHUB ACTIONS                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Build Job:                                                  │
+│  1. docker build -f deployment/Dockerfile                    │
+│  2. docker push ghcr.io/bluestemso/taylor_learns_dot_com       │
+│                                                               │
+│  Deploy Job:                                                 │
+│  1. SSH to VPS                                               │
+│  2. docker pull ghcr.io/bluestemso/taylor_learns_dot_com       │
+│  3. docker compose up -d --force-recreate django             │
+│  4. Run migrations                                           │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
 
-### Clean Up Docker
+                            │
+                            │ deploys to
+                            ▼
 
-```bash
-# Remove unused images
-docker image prune -a
-
-# Remove unused volumes (be careful!)
-docker volume prune
+┌─────────────────────────────────────────────────────────────┐
+│                  PRODUCTION (Hetzner VPS)                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  /home/tschaack/app-stack/docker-compose.yml                 │
+│  ├── nginx-proxy-manager (ports 80, 443)                     │
+│  ├── postgres:16 (shared database)                           │
+│  ├── django (image: ghcr.io/.../taylor_learns_dot_com)       │
+│  ├── n8n (workflow automation)                               │
+│  └── open-webui (AI interface)                               │
+│                                                               │
+│  Network: app-network (bridge)                               │
+│  Access: https://taylorlearns.com (via NPM proxy)            │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Support
+## Support and Additional Resources
+
+- **Project README**: `/README.md`
+- **Frontend Design Guide**: `/FRONTEND_DESIGN_GUIDE.md`
+- **Testing Documentation**: `/tests/README.md`
+- **GitHub Repository**: https://github.com/bluestemso/taylor_learns_dot_com
 
 For issues:
-1. Check container/service logs
+1. Check container logs (`docker compose logs`)
 2. Verify environment variables
-3. Test database connectivity
-4. Check Nginx Proxy Manager configuration
-5. Verify DNS and SSL certificate status
+3. Review GitHub Actions logs
+4. Test database connectivity
+5. Check Nginx Proxy Manager configuration

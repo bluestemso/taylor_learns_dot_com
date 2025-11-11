@@ -18,9 +18,6 @@
 # - docker compose ps              # List running services
 # =============================================================================
 
-version: '3.8'
-# ↑ Docker Compose file format version (3.8 is stable and widely supported)
-
 # -----------------------------------------------------------------------------
 # SERVICES - The Containers That Make Up Your Application
 # -----------------------------------------------------------------------------
@@ -82,13 +79,10 @@ services:
       dockerfile: deployment/Dockerfile
       # ↑ Path to the Dockerfile (relative to context)
 
-    # EXPOSE: Make port 8000 available to other containers on the network
-    # (Not exposed to the host machine - only accessible via the Docker network)
-    expose:
-      - "8000"
-      # Nginx Proxy Manager will connect to django:8000 to proxy requests
-      # We use 'expose' instead of 'ports' because we don't want direct access
-      # from the internet - all traffic goes through Nginx Proxy Manager
+    # PORTS: Expose port 8000 to the host for local development
+    # This allows you to access the site at http://localhost:8000
+    ports:
+      - "8000:8000"
 
     # ENVIRONMENT: Configuration variables for Django
     environment:
@@ -171,15 +165,9 @@ services:
 # -----------------------------------------------------------------------------
 networks:
   app-network:
-    # Use a specific network name that matches your existing services
-    name: app-stack_app-network
-
-    # external: true means this network already exists (created outside this file)
-    # We're joining the existing network that Nginx Proxy Manager uses,
-    # rather than creating a new one
-    external: true
-    # This allows all services in app-stack (n8n, OpenWebUI, Django, etc.)
-    # to communicate with each other and be proxied by Nginx Proxy Manager
+    # Create a local network for development
+    # Services can communicate using service names (e.g., django can reach postgres:5432)
+    driver: bridge
 
 # -----------------------------------------------------------------------------
 # VOLUMES - Persistent Storage

@@ -1,17 +1,18 @@
 # =============================================================================
-# GitHub Actions Workflow: Deploy to Production (Hetzner VPS)
+# GitHub Actions Workflow: Build and Deploy to Production (Hetzner VPS)
 # =============================================================================
-# This workflow automatically deploys the Django blog to your Hetzner VPS
-# whenever you push to the main branch. It can also be triggered manually.
+# This workflow automatically builds a Docker image and deploys it to your
+# Hetzner VPS whenever you push to the main branch.
 #
 # HOW IT WORKS:
 # 1. Triggered when code is pushed to main (or manually via GitHub UI)
-# 2. Connects to your VPS via SSH using a private key stored in GitHub Secrets
-# 3. Pulls the latest code from the repository on the server
-# 4. Builds a new Docker image with the updated code
-# 5. Recreates the Django container with the new image (zero-downtime)
-# 6. Runs database migrations to update the schema if needed
-# 7. Performs a health check to verify the site is working
+# 2. Builds a Docker image with your latest code
+# 3. Pushes the image to GitHub Container Registry (ghcr.io)
+# 4. Connects to your VPS via SSH
+# 5. Pulls the new image from the registry
+# 6. Recreates the Django container with the new image (zero-downtime)
+# 7. Runs database migrations
+# 8. Performs a health check
 #
 # REQUIRED GITHUB SECRETS (Settings → Secrets and variables → Actions):
 # - SSH_PRIVATE_KEY: Your SSH private key for server access
@@ -19,16 +20,19 @@
 # - VPS_USER: Your server username (e.g., tschaack)
 # - VPS_APP_DIR: Path to your app-stack directory (e.g., /home/tschaack/app-stack)
 #
-# GitHub Actions Concepts:
-# - Workflows: Automated processes defined in YAML files
-# - Jobs: A set of steps that run on the same runner (virtual machine)
-# - Steps: Individual tasks (checkout code, run commands, etc.)
-# - Runners: Virtual machines that execute your jobs (GitHub-hosted or self-hosted)
-# - Secrets: Encrypted environment variables for sensitive data
+# PERMISSIONS REQUIRED:
+# - packages: write (to push to GitHub Container Registry)
 # =============================================================================
 
 # Workflow name (appears in GitHub UI)
 name: Deploy to Production
+
+# -----------------------------------------------------------------------------
+# PERMISSIONS - Required for pushing to GitHub Container Registry
+# -----------------------------------------------------------------------------
+permissions:
+  contents: read
+  packages: write
 
 # -----------------------------------------------------------------------------
 # TRIGGERS - When This Workflow Runs
@@ -50,11 +54,64 @@ on:
 # JOBS - The Work to Be Done
 # -----------------------------------------------------------------------------
 # A workflow can have multiple jobs that run in parallel or sequentially.
-# This workflow has one job: deploy
+# This workflow has two jobs: build (creates Docker image) and deploy (deploys to VPS)
 jobs:
+  # ---------------------------------------------------------------------------
+  # JOB 1: Build Docker Image and Push to Registry
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Docker Buildx (enhanced Docker builder)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Step 3: Log in to GitHub Container Registry
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 4: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Step 5: Build and push Docker image
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./deployment/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # JOB 2: Deploy to VPS (depends on build completing)
+  # ---------------------------------------------------------------------------
   deploy:
     # Job name (appears in GitHub UI)
     name: Deploy to Hetzner VPS
+
+    # This job runs after the build job completes successfully
+    needs: build
 
     # Runner: The virtual machine that executes this job
     # ubuntu-latest is a GitHub-hosted runner (free for public repos)
@@ -70,9 +127,7 @@ jobs:
       # -----------------------------------------------------------------------
       # Step 1: Checkout Code
       # -----------------------------------------------------------------------
-      # Downloads your repository code to the runner
-      # This doesn't deploy the code - it just makes it available for inspection
-      # (We need it here only if we wanted to do pre-deployment checks)
+      # We still need the code to reference commit info for the summary
       - name: Checkout code
         uses: actions/checkout@v4
         # 'uses' runs a pre-built action from GitHub Marketplace
@@ -123,27 +178,17 @@ jobs:
 
           # SSH into the server and run commands remotely
           # The commands between << 'ENDSSH' and ENDSSH run ON THE SERVER
-          ssh $VPS_USER@$VPS_HOST "APP_STACK_DIR='$APP_STACK_DIR' APP_DIR='$APP_DIR' bash -s" << 'ENDSSH'
+          ssh $VPS_USER@$VPS_HOST "APP_STACK_DIR='$APP_STACK_DIR' bash -s" << 'ENDSSH'
             # Exit immediately if any command fails (best practice for deployment scripts)
             set -e
 
             # Navigate to the app stack directory
             cd "$APP_STACK_DIR" || exit 1
 
-            echo "Pulling latest code..."
-            # Navigate to the repo directory
-            cd "$APP_DIR" || exit 1
-            # Pull the latest code from GitHub (the changes we just pushed)
-            git pull origin main
-
-            echo "Returning to app stack directory for docker compose commands..."
-            cd "$APP_STACK_DIR"
-
-            echo "Building Docker image..."
-            # Build a new Docker image with the updated code
-            # Only rebuilds the django service (not postgres)
-            docker compose build django
-            # This runs the Dockerfile, creating a new image with your latest code
+            echo "Pulling latest Docker image from GitHub Container Registry..."
+            # Pull the newly built image from ghcr.io
+            docker pull ghcr.io/bluestemso/taylor_learns_dot_com:latest
+            # This downloads the pre-built image we just created in the build job
 
             echo "Recreating Django service with new image..."
             # Replace the running container with a new one using the new image

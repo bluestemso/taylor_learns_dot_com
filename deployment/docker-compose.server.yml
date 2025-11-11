@@ -1,0 +1,121 @@
+# =============================================================================
+# Server Docker Compose Configuration (for /home/tschaack/app-stack/)
+# =============================================================================
+# This file is a TEMPLATE for your production server's docker-compose.yml
+# It should be placed at: /home/tschaack/app-stack/docker-compose.yml
+#
+# This configuration:
+# - Pulls pre-built images from GitHub Container Registry
+# - Shares a single PostgreSQL database across multiple apps
+# - Uses Nginx Proxy Manager as reverse proxy for all services
+# - Maintains persistent volumes for database and uploaded media
+# =============================================================================
+
+services:
+  # 1. Reverse Proxy (handles SSL/TLS and routes traffic to services)
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80'      # HTTP
+      - '443:443'    # HTTPS
+      - '81:81'      # Admin interface
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - app-network
+
+  # 2. n8n Workflow Automation
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - WEBHOOK_URL=${WEBHOOK_URL:-https://n8n.taylorlearns.com}
+      - N8N_EDITOR_BASE_URL=${N8N_EDITOR_BASE_URL:-https://n8n.taylorlearns.com}
+      - N8N_HOST=${N8N_HOST:-n8n.taylorlearns.com}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - app-network
+
+  # 3. OpenWebUI (AI Interface)
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-https://ollama.com}
+    volumes:
+      - openwebui_data:/app/backend/data
+    networks:
+      - app-network
+
+  # 4. PostgreSQL Database (shared by Django and potentially other apps)
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-taylorlearnsblog}
+      POSTGRES_USER: ${DB_USER:-taylorlearns}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-taylorlearns}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 5. Django Blog Application (taylorlearns.com)
+  # IMPORTANT: Uses pre-built image from GitHub Container Registry
+  django:
+    # Pull the image built by GitHub Actions (NOT building locally)
+    image: ghcr.io/bluestemso/taylor_learns_dot_com:latest
+    restart: unless-stopped
+    environment:
+      # Database connection (uses shared postgres service)
+      - DATABASE_URL=postgresql://${DB_USER:-taylorlearns}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-taylorlearnsblog}
+
+      # Django configuration
+      - DJANGO_SECRET=${DJANGO_SECRET}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-taylorlearns.com,www.taylorlearns.com}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-https://taylorlearns.com,https://www.taylorlearns.com}
+      - SESSION_COOKIE_SECURE=True
+
+      # Optional services
+      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL:-}
+      - CLOUDFLARE_TOKEN=${CLOUDFLARE_TOKEN:-}
+      - CLOUDFLARE_ZONE_ID=${CLOUDFLARE_ZONE_ID:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SCREENSHOT_SECRET=${SCREENSHOT_SECRET:-}
+    volumes:
+      - django_static:/app/staticfiles
+      - django_media:/app/media
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8000"
+    # Nginx Proxy Manager proxies to django:8000
+
+volumes:
+  npm_data:
+  npm_letsencrypt:
+  n8n_data:
+  openwebui_data:
+  postgres_data:     # Persistent database storage
+  django_static:     # Django static files (CSS, JS, images)
+  django_media:      # User-uploaded media files
+
+networks:
+  app-network:
+    driver: bridge
