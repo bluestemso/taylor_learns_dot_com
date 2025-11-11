@@ -136,6 +136,9 @@ jobs:
             # Pull the latest code from GitHub (the changes we just pushed)
             git pull origin main
 
+            echo "Returning to app stack directory for docker compose commands..."
+            cd "$APP_STACK_DIR"
+
             echo "Building Docker image..."
             # Build a new Docker image with the updated code
             # Only rebuilds the django service (not postgres)

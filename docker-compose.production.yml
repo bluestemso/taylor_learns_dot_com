@@ -1,0 +1,68 @@
+# Production docker-compose.yml
+# This file should be copied to ~/app-stack/docker-compose.yml on the server
+#
+# Setup:
+#   1. Copy this file to ~/app-stack/docker-compose.yml
+#   2. Create ~/app-stack/.env with required environment variables
+#   3. Ensure repo is cloned at ~/app-stack/taylor_learns_dot_com
+
+version: '3.8'
+
+services:
+  django:
+    build:
+      context: ./taylor_learns_dot_com
+      dockerfile: deployment/Dockerfile
+    container_name: app-stack-django-1
+    expose:
+      - "8000"
+    environment:
+      # Database
+      DB_NAME: ${DB_NAME:-taylorlearnsblog}
+      DB_USER: ${DB_USER:-taylorlearns}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+
+      # Django
+      DJANGO_SECRET: ${DJANGO_SECRET:?DJANGO_SECRET must be set}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-taylorlearns.com,www.taylorlearns.com}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://taylorlearns.com,https://www.taylorlearns.com}
+
+      # Optional
+      CLOUDFLARE_EMAIL: ${CLOUDFLARE_EMAIL:-}
+      CLOUDFLARE_TOKEN: ${CLOUDFLARE_TOKEN:-}
+      CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # If you're using the postgres service from this compose file:
+  # postgres:
+  #   image: postgres:15
+  #   container_name: app-stack-postgres-1
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     POSTGRES_DB: ${DB_NAME:-taylorlearnsblog}
+  #     POSTGRES_USER: ${DB_USER:-taylorlearns}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+
+networks:
+  app-network:
+    name: app-stack_app-network
+    external: true
+
+# volumes:
+#   postgres_data:
