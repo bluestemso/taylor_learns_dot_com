@@ -47,9 +47,19 @@ jobs:
             echo "Recreating Django service with new image..."
             docker compose up -d --no-deps --force-recreate django
 
+            echo "Waiting for container to start..."
+            sleep 5
+
+            echo "Checking container status..."
+            if ! docker compose ps django | grep -q "Up"; then
+              echo "Container failed to start. Showing logs:"
+              docker compose logs --tail=100 django
+              exit 1
+            fi
+
             echo "Running database migrations..."
             docker compose exec -T django uv run python manage.py migrate --noinput
-            
+
             echo "Checking service status..."
             docker compose ps django || true
             
