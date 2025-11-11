@@ -64,9 +64,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Must be right after SecurityMiddleware, before everything else
     "django_hosts.middleware.HostsRequestMiddleware",
     "redirects.middleware.redirect_middleware",
-    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django_http_debug.middleware.DebugMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -85,8 +86,6 @@ if DEBUG:
         INSTALLED_APPS += ["debug_toolbar"]
     except ImportError:
         pass
-
-MIDDLEWARE += ["whitenoise.middleware.WhiteNoiseMiddleware"]
 
 
 # Sentry
