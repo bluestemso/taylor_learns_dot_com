@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+env/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Deployment
+deployment/
+*.md
+!README.md
+
+# Jupyter
+jupyter-notebooks/
+.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Old imports
+old-import-xml/
+
+# Lock files (we copy uv.lock explicitly)
+uv.lock
+
+
+
