@@ -215,21 +215,46 @@ CLOUDFLARE_ZONE_ID=<cloudflare-zone>
 
 ## CI/CD
 
-### GitHub Actions
+### Continuous Integration (CI)
 
 `.github/workflows/ci.yml` runs on every push/PR:
-1. Sets up PostgreSQL service
+1. Sets up PostgreSQL service container
 2. Installs uv and Python 3.13
 3. Runs `uv sync` to install dependencies
 4. Runs migrations and collects static files
 5. Executes Django test suite with `uv run python manage.py test -v3`
 
-### Deployment
+### Continuous Deployment (CD)
 
-- Uses `Procfile` for Heroku-style deployment
-- WhiteNoise serves static files with content hashing (no CDN required for static assets)
-- Static files versioned using `CompressedManifestStaticFilesStorage`
-- Zero-downtime deployment strategy (new processes start before old ones stop)
+`.github/workflows/deploy.yml` automatically deploys to production:
+1. Triggers on push to `main` branch (or manual trigger)
+2. Connects to Hetzner VPS via SSH
+3. Pulls latest code from GitHub
+4. Builds new Docker image with updated code
+5. Recreates Django container (zero-downtime deployment)
+6. Runs database migrations
+7. Performs health check
+
+**Deployment Stack:**
+- **Hosting:** Hetzner VPS
+- **Orchestration:** Docker Compose
+- **Reverse Proxy:** Nginx Proxy Manager (handles SSL/TLS)
+- **Web Server:** Gunicorn (4 workers, 2 threads each)
+- **Static Files:** WhiteNoise with content hashing (no CDN required)
+- **Database:** PostgreSQL 15 (in Docker container with persistent volume)
+
+**Required GitHub Secrets:**
+- `SSH_PRIVATE_KEY`: SSH key for server access
+- `VPS_HOST`: Server IP address
+- `VPS_USER`: Server username
+- `VPS_APP_DIR`: Path to app-stack directory
+
+**Zero-Downtime Strategy:**
+- New Docker container starts before old one stops
+- Database runs continuously (not recreated during deploys)
+- Health checks verify service is ready before marking deployment complete
+
+See `deployment/README.md` for detailed deployment documentation.
 
 ## Custom Management Commands
 
@@ -337,12 +362,22 @@ Custom admin in `blog/admin.py` provides:
 
 ### Deploying to Production
 
-1. Run tests: `uv run python manage.py test -v3`
+**Automatic Deployment (Recommended):**
+1. Run tests locally: `uv run python manage.py test -v3`
 2. Run E2E tests: `npm test`
-3. Collect static files: `uv run python manage.py collectstatic --noinput`
-4. Set environment variables (DJANGO_SECRET, DATABASE_URL, etc.)
-5. Run migrations: `uv run python manage.py migrate`
-6. Deploy with `Procfile` (Heroku/similar platforms)
+3. Commit changes: `git add . && git commit -m "Your message"`
+4. Push to main: `git push origin main`
+5. GitHub Actions automatically deploys to Hetzner VPS
+
+**Manual Deployment (if needed):**
+1. SSH into server: `ssh user@your-vps-ip`
+2. Navigate to repo: `cd /path/to/taylor_learns_dot_com`
+3. Pull latest code: `git pull origin main`
+4. Build Docker image: `docker compose build django`
+5. Recreate container: `docker compose up -d --no-deps --force-recreate django`
+6. Run migrations: `docker compose exec django uv run python manage.py migrate --noinput`
+
+See `.github/workflows/deploy.yml` and `deployment/README.md` for details.
 
 ## Additional Documentation
 

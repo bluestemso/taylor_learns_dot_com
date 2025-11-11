@@ -1,60 +1,194 @@
-version: '3.8'
+# =============================================================================
+# Docker Compose Configuration for taylorlearns.com
+# =============================================================================
+# Docker Compose orchestrates multiple containers to work together as one application.
+# This file defines two services: PostgreSQL (database) and Django (web app).
+#
+# Key concepts:
+# - Services: Each container that makes up your application
+# - Networks: How containers communicate with each other
+# - Volumes: Persistent storage that survives container restarts
+# - Environment variables: Configuration passed to containers
+#
+# Common commands:
+# - docker compose up -d           # Start all services in background
+# - docker compose down            # Stop and remove all services
+# - docker compose logs -f django  # View Django logs
+# - docker compose exec django sh # Open shell in Django container
+# - docker compose ps              # List running services
+# =============================================================================
 
+version: '3.8'
+# ↑ Docker Compose file format version (3.8 is stable and widely supported)
+
+# -----------------------------------------------------------------------------
+# SERVICES - The Containers That Make Up Your Application
+# -----------------------------------------------------------------------------
 services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database Service
+  # ---------------------------------------------------------------------------
+  # This container runs the PostgreSQL database server.
+  # Your Django app connects to this to store/retrieve data.
   postgres:
+    # Use official PostgreSQL 15 image from Docker Hub
+    # (pre-built, maintained by PostgreSQL team)
     image: postgres:15
+
+    # VOLUMES: Persistent storage for database data
+    # Without this, your data would be lost when the container restarts!
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # ↑ Format: volume_name:container_path
+      # Maps the 'postgres_data' volume to PostgreSQL's data directory
+      # The volume persists on your host machine even if the container is deleted
+
+    # ENVIRONMENT: Configuration variables for PostgreSQL
     environment:
+      # Database name to create on first startup
       POSTGRES_DB: ${DB_NAME:-taylorlearnsblog}
+      # ↑ ${VAR:-default} syntax: use .env file value, or default if not set
+
+      # Database user (your Django app logs in with this username)
       POSTGRES_USER: ${DB_USER:-taylorlearns}
+
+      # Database password - REQUIRED (no default for security)
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      # ↑ ${VAR:?message} syntax: fail with error if not set in .env file
+
+    # NETWORKS: Connect to shared network so Django can reach the database
     networks:
       - app-network
-    restart: unless-stopped
+      # This must match the network that Nginx Proxy Manager uses,
+      # so it can proxy requests to Django
 
+    # RESTART POLICY: Automatically restart if container crashes
+    restart: unless-stopped
+    # Options: no, always, on-failure, unless-stopped
+    # 'unless-stopped' means restart automatically unless you explicitly stopped it
+
+  # ---------------------------------------------------------------------------
+  # Django Application Service
+  # ---------------------------------------------------------------------------
+  # This container runs your Django blog application using Gunicorn.
   django:
+    # BUILD: Instead of using a pre-made image, build from our Dockerfile
     build:
       context: .
+      # ↑ Build context: which directory to use as the base (. = repo root)
+      # Files in this directory are accessible during build (via COPY commands)
+
       dockerfile: deployment/Dockerfile
+      # ↑ Path to the Dockerfile (relative to context)
+
+    # EXPOSE: Make port 8000 available to other containers on the network
+    # (Not exposed to the host machine - only accessible via the Docker network)
     expose:
       - "8000"
+      # Nginx Proxy Manager will connect to django:8000 to proxy requests
+      # We use 'expose' instead of 'ports' because we don't want direct access
+      # from the internet - all traffic goes through Nginx Proxy Manager
+
+    # ENVIRONMENT: Configuration variables for Django
     environment:
-      # Database
+      # --- Database Connection Settings ---
+      # These must match the postgres service above
       DB_NAME: ${DB_NAME:-taylorlearnsblog}
       DB_USER: ${DB_USER:-taylorlearns}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
-      DB_HOST: postgres
-      DB_PORT: 5432
 
-      # Django
+      # DB_HOST: hostname to connect to (uses service name from docker-compose)
+      DB_HOST: postgres
+      # ↑ Docker Compose creates DNS entries so 'postgres' resolves to the
+      # postgres container's IP address automatically - this is "service discovery"
+
+      DB_PORT: 5432
+      # ↑ Standard PostgreSQL port
+
+      # --- Django Core Settings ---
+      # SECRET_KEY: Used for cryptographic signing (sessions, CSRF tokens, etc.)
+      # MUST be kept secret and unique per environment!
       DJANGO_SECRET: ${DJANGO_SECRET:?DJANGO_SECRET must be set}
+
+      # DEBUG mode: should always be False in production
+      # When True, Django shows detailed error pages (SECURITY RISK in production)
       DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+
+      # ALLOWED_HOSTS: Which domain names Django will accept requests for
+      # Protects against HTTP Host header attacks
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-taylorlearns.com,www.taylorlearns.com}
+
+      # CSRF_TRUSTED_ORIGINS: Which origins can submit forms to your site
+      # Required for CSRF protection when using HTTPS
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://taylorlearns.com,https://www.taylorlearns.com}
 
-      # Optional
+      # --- Optional External Services ---
+      # Cloudflare API integration (for cache purging, etc.)
       CLOUDFLARE_EMAIL: ${CLOUDFLARE_EMAIL:-}
       CLOUDFLARE_TOKEN: ${CLOUDFLARE_TOKEN:-}
       CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-}
+
+      # Sentry error tracking (for production monitoring)
       SENTRY_DSN: ${SENTRY_DSN:-}
+      # ↑ ${VAR:-} with empty default means "optional, empty string if not set"
+
+    # DEPENDS_ON: Start postgres before django
+    # This ensures the database container is running before Django starts
+    # (Django will still need to wait for postgres to be *ready* - see healthcheck)
     depends_on:
       - postgres
+
+    # NETWORKS: Connect to the same network as postgres and Nginx Proxy Manager
     networks:
       - app-network
-    restart: unless-stopped
-    # Health check to ensure Django is responding
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
+    # RESTART POLICY: Same as postgres
+    restart: unless-stopped
+
+    # HEALTH CHECK: Verify the Django app is running correctly
+    # Docker will periodically run this test to check if the service is healthy
+    healthcheck:
+      # Test command: curl the homepage, fail if HTTP error
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      # ↑ -f flag makes curl exit with error code if HTTP status is 4xx or 5xx
+
+      # How often to check (after the service is up and running)
+      interval: 30s
+
+      # How long to wait for the test command to complete
+      timeout: 10s
+
+      # How many failures before marking as unhealthy
+      retries: 3
+
+      # Grace period when container first starts (Django needs time to initialize)
+      start_period: 40s
+      # During this period, failed checks don't count toward the retry limit
+
+# -----------------------------------------------------------------------------
+# NETWORKS - How Containers Communicate
+# -----------------------------------------------------------------------------
 networks:
   app-network:
+    # Use a specific network name that matches your existing services
     name: app-stack_app-network
-    external: true
 
+    # external: true means this network already exists (created outside this file)
+    # We're joining the existing network that Nginx Proxy Manager uses,
+    # rather than creating a new one
+    external: true
+    # This allows all services in app-stack (n8n, OpenWebUI, Django, etc.)
+    # to communicate with each other and be proxied by Nginx Proxy Manager
+
+# -----------------------------------------------------------------------------
+# VOLUMES - Persistent Storage
+# -----------------------------------------------------------------------------
 volumes:
+  # Define the postgres_data volume (used by the postgres service above)
+  # This creates a Docker-managed volume on your host machine that persists
+  # data even when containers are stopped or deleted
   postgres_data:
+    # No additional config needed - Docker will create and manage this volume
+    # Location on host: /var/lib/docker/volumes/taylor_learns_dot_com_postgres_data
+    # You can back up this volume with: docker run --rm -v postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/backup.tar.gz /data

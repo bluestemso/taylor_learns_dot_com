@@ -1,45 +1,201 @@
+# =============================================================================
+# GitHub Actions Workflow: Continuous Integration (CI)
+# =============================================================================
+# This workflow runs automated tests on every push and pull request to ensure
+# code quality and catch bugs before they reach production.
+#
+# HOW IT WORKS:
+# 1. Triggered on every push to any branch AND every pull request
+# 2. Sets up a PostgreSQL database service for testing
+# 3. Installs Python dependencies using uv
+# 4. Runs database migrations in a test database
+# 5. Collects static files (to catch any collectstatic errors)
+# 6. Runs the full Django test suite with verbose output
+#
+# CI/CD PIPELINE:
+# - CI (this file): Runs tests on every branch → Ensures code quality
+# - CD (deploy.yml): Deploys to production on main branch → Delivers features
+#
+# WHY CI IS IMPORTANT:
+# - Catches bugs early (before merging to main)
+# - Validates that migrations work correctly
+# - Ensures tests pass in a clean environment (not just on your machine)
+# - Provides confidence when reviewing pull requests
+# - Acts as a safety net before deployment
+# =============================================================================
+
+# Workflow name (appears in GitHub UI)
 name: CI
 
+# -----------------------------------------------------------------------------
+# TRIGGERS - When This Workflow Runs
+# -----------------------------------------------------------------------------
+# This runs on ALL branches for both pushes and pull requests
+# Unlike deploy.yml which only runs on main, CI runs everywhere
 on: [push, pull_request]
+# This means:
+# - Every git push triggers CI (even on feature branches)
+# - Every pull request creation/update triggers CI
+# - You'll see a green check ✓ or red X ✗ in pull requests
 
+# -----------------------------------------------------------------------------
+# JOBS - The Work to Be Done
+# -----------------------------------------------------------------------------
 jobs:
   build:
+    # Job name (we call it 'build' but it's really 'test and validate')
+    # 'build' is a common convention in CI for the primary test job
+
+    # Runner: GitHub-hosted Ubuntu VM (same as deploy.yml)
     runs-on: ubuntu-latest
+
+    # -------------------------------------------------------------------------
+    # SERVICES - Containers That Run Alongside the Job
+    # -------------------------------------------------------------------------
+    # Services are Docker containers that provide dependencies for your tests
+    # They run in parallel with your job and are accessible via localhost
     services:
       postgres:
+        # Use official PostgreSQL image (any version works, we use default)
+        # This creates a temporary database just for this test run
         image: postgres
+
+        # Environment variables to configure PostgreSQL
         env:
+          # Create a user named 'postgres' (default superuser)
           POSTGRES_USER: postgres
+
+          # Create a database named 'test_db'
           POSTGRES_DB: test_db
+
+          # 'trust' auth method: no password required (safe for CI, never use in production!)
+          # This simplifies the test DATABASE_URL (no password to manage)
           POSTGRES_HOST_AUTH_METHOD: trust
+
+        # Map PostgreSQL port to the runner (host)
         ports:
           - 5432:5432
+          # Format: host_port:container_port
+          # This makes postgres accessible at localhost:5432
+
+        # Health check options: ensure postgres is ready before running tests
+        # Without this, tests might start before postgres is accepting connections
         options: >-
           --health-cmd pg_isready
+          # pg_isready: PostgreSQL utility that checks if the server is ready
+
           --health-interval 10s
+          # Check every 10 seconds
+
           --health-timeout 5s
+          # Wait up to 5 seconds for each check
+
           --health-retries 5
+          # Try up to 5 times before giving up
+          # Total wait time: up to 50 seconds (10s × 5)
+
+    # -------------------------------------------------------------------------
+    # STEPS - Individual Tasks in This Job
+    # -------------------------------------------------------------------------
     steps:
+
+      # -----------------------------------------------------------------------
+      # Step 1: Checkout Code
+      # -----------------------------------------------------------------------
+      # Downloads your repository code to the runner
+      # Unlike deploy.yml, here we NEED the code to run tests on it
       - name: Check out code
         uses: actions/checkout@v4
+        # This gives the runner access to your entire repository
+        # (manage.py, blog/, config/, tests/, etc.)
+
+      # -----------------------------------------------------------------------
+      # Step 2: Install uv (Python Package Manager)
+      # -----------------------------------------------------------------------
+      # We use uv instead of pip because it's much faster
+      # This action is maintained by the uv team (Astral)
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
+          # Always use the latest stable version of uv
+
+      # -----------------------------------------------------------------------
+      # Step 3: Set Up Python
+      # -----------------------------------------------------------------------
+      # Installs a specific Python version
+      # Even though the runner has Python pre-installed, we specify the version
+      # to ensure consistency with production (Python 3.13)
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+          # This matches the Python version used in local development
+          # and ensures tests run in the same environment
+
+      # -----------------------------------------------------------------------
+      # Step 4: Install Dependencies
+      # -----------------------------------------------------------------------
+      # Install all Python packages defined in pyproject.toml
       - name: Install dependencies
         run: |
           uv sync
+          # uv sync reads pyproject.toml and uv.lock, then:
+          # 1. Creates a virtual environment (.venv)
+          # 2. Installs exact package versions from uv.lock
+          # This ensures CI uses the same package versions as your local dev
+
+      # -----------------------------------------------------------------------
+      # Step 5: Set Up Database for Testing
+      # -----------------------------------------------------------------------
+      # Prepare the test database by running migrations and collecting static files
       - name: Set up database
         run: |
+          # Install PostgreSQL client tools (psql, pg_dump, etc.)
+          # Needed for Django to connect to the postgres service
           sudo apt-get install -y postgresql-client
+
+          # Set DATABASE_URL environment variable for Django
+          # Django reads this to know how to connect to the database
           export DATABASE_URL=postgres://postgres:@localhost/test_db
+          # Format: postgres://user:password@host/database
+          # No password (@ with nothing before it) because we use 'trust' auth
+
+          # Run database migrations to set up the schema
           uv run python manage.py migrate --noinput
+          # Creates all tables (blog_entry, blog_tag, etc.)
+          # --noinput: don't prompt for confirmation (required for automation)
+
+          # Collect static files to ensure there are no errors
           uv run python manage.py collectstatic --noinput
+          # This catches issues like:
+          # - Missing static files
+          # - Broken CSS/JS references
+          # - Errors in Django's static file configuration
+
+      # -----------------------------------------------------------------------
+      # Step 6: Run Tests
+      # -----------------------------------------------------------------------
+      # Execute the full Django test suite
       - name: Run tests
         run: |
+          # Set DATABASE_URL again (export doesn't persist between steps)
           export DATABASE_URL=postgres://postgres:@localhost/test_db
+
+          # Run Django tests with verbose output
           uv run python manage.py test -v3
+          # -v3: verbosity level 3 (most detailed)
+          # Shows:
+          # - Each test method as it runs
+          # - Full tracebacks for failures
+          # - SQL queries (if test fails)
+          # - Detailed error messages
+          #
+          # This runs all tests in blog/tests.py:
+          # - Model tests (Entry, Blogmark, Tag, etc.)
+          # - View tests (homepage, search, feeds, etc.)
+          # - URL routing tests
+          # - Template rendering tests
+          #
+          # If ANY test fails, this step fails, and the workflow fails
+          # (you'll see a red X in GitHub, and the PR can't be merged)

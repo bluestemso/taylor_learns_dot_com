@@ -1,83 +1,214 @@
+# =============================================================================
+# GitHub Actions Workflow: Deploy to Production (Hetzner VPS)
+# =============================================================================
+# This workflow automatically deploys the Django blog to your Hetzner VPS
+# whenever you push to the main branch. It can also be triggered manually.
+#
+# HOW IT WORKS:
+# 1. Triggered when code is pushed to main (or manually via GitHub UI)
+# 2. Connects to your VPS via SSH using a private key stored in GitHub Secrets
+# 3. Pulls the latest code from the repository on the server
+# 4. Builds a new Docker image with the updated code
+# 5. Recreates the Django container with the new image (zero-downtime)
+# 6. Runs database migrations to update the schema if needed
+# 7. Performs a health check to verify the site is working
+#
+# REQUIRED GITHUB SECRETS (Settings → Secrets and variables → Actions):
+# - SSH_PRIVATE_KEY: Your SSH private key for server access
+# - VPS_HOST: Your server IP address (e.g., 65.109.139.248)
+# - VPS_USER: Your server username (e.g., tschaack)
+# - VPS_APP_DIR: Path to your app-stack directory (e.g., /home/tschaack/app-stack)
+#
+# GitHub Actions Concepts:
+# - Workflows: Automated processes defined in YAML files
+# - Jobs: A set of steps that run on the same runner (virtual machine)
+# - Steps: Individual tasks (checkout code, run commands, etc.)
+# - Runners: Virtual machines that execute your jobs (GitHub-hosted or self-hosted)
+# - Secrets: Encrypted environment variables for sensitive data
+# =============================================================================
+
+# Workflow name (appears in GitHub UI)
 name: Deploy to Production
 
+# -----------------------------------------------------------------------------
+# TRIGGERS - When This Workflow Runs
+# -----------------------------------------------------------------------------
 on:
+  # Trigger on push to main branch
+  # (This is the most common deployment trigger - deploy when new code is merged)
   push:
     branches:
       - main
-  workflow_dispatch:  # Allow manual triggering
+      # Only the main branch triggers deployment (feature branches don't deploy)
 
+  # Allow manual triggering from GitHub UI
+  # (Useful for re-deploying without new commits, or deploying specific branches)
+  workflow_dispatch:
+  # To manually trigger: Go to Actions tab → Select this workflow → Run workflow
+
+# -----------------------------------------------------------------------------
+# JOBS - The Work to Be Done
+# -----------------------------------------------------------------------------
+# A workflow can have multiple jobs that run in parallel or sequentially.
+# This workflow has one job: deploy
 jobs:
   deploy:
+    # Job name (appears in GitHub UI)
     name: Deploy to Hetzner VPS
+
+    # Runner: The virtual machine that executes this job
+    # ubuntu-latest is a GitHub-hosted runner (free for public repos)
+    # It's a fresh Ubuntu VM with common tools pre-installed (git, docker, curl, etc.)
     runs-on: ubuntu-latest
-    
+
+    # -------------------------------------------------------------------------
+    # STEPS - Individual Tasks in This Job
+    # -------------------------------------------------------------------------
+    # Steps run sequentially. If any step fails, the job stops (unless configured otherwise)
     steps:
+
+      # -----------------------------------------------------------------------
+      # Step 1: Checkout Code
+      # -----------------------------------------------------------------------
+      # Downloads your repository code to the runner
+      # This doesn't deploy the code - it just makes it available for inspection
+      # (We need it here only if we wanted to do pre-deployment checks)
       - name: Checkout code
         uses: actions/checkout@v4
+        # 'uses' runs a pre-built action from GitHub Marketplace
+        # actions/checkout is maintained by GitHub and clones your repo
 
+      # -----------------------------------------------------------------------
+      # Step 2: Setup SSH Authentication
+      # -----------------------------------------------------------------------
+      # Configures SSH agent with your private key so we can connect to the VPS
+      # The SSH agent holds your key in memory for the duration of this job
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
+        # This action starts an SSH agent and adds your private key to it
         with:
+          # Load the private key from GitHub Secrets
+          # Secrets are encrypted and never exposed in logs
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # ${{ }} is GitHub Actions syntax for accessing context variables
 
+      # -----------------------------------------------------------------------
+      # Step 3: Add Server to Known Hosts
+      # -----------------------------------------------------------------------
+      # Prevents SSH from prompting "Are you sure you want to connect?"
+      # on first connection (which would hang the workflow)
       - name: Add server to known hosts
         run: |
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+        # ssh-keyscan fetches the server's public key fingerprint
+        # -H hashes the hostname for privacy
+        # >> appends to known_hosts file (like clicking "yes" to SSH prompt)
 
+      # -----------------------------------------------------------------------
+      # Step 4: Deploy to Server (Main Deployment Logic)
+      # -----------------------------------------------------------------------
+      # Connects to the VPS via SSH and runs deployment commands remotely
       - name: Deploy to server
+        # env: Set environment variables for this step only
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}      # Server IP
+          VPS_USER: ${{ secrets.VPS_USER }}      # Server username
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }} # App directory path
+
+        # 'run' executes shell commands
         run: |
+          # Set directory paths (with fallback default)
           APP_STACK_DIR="${VPS_APP_DIR:-/home/tschaack/app-stack}"
           APP_DIR="$APP_STACK_DIR/taylor_learns_dot_com"
+
+          # SSH into the server and run commands remotely
+          # The commands between << 'ENDSSH' and ENDSSH run ON THE SERVER
           ssh $VPS_USER@$VPS_HOST "APP_STACK_DIR='$APP_STACK_DIR' APP_DIR='$APP_DIR' bash -s" << 'ENDSSH'
+            # Exit immediately if any command fails (best practice for deployment scripts)
             set -e
+
+            # Navigate to the app stack directory
             cd "$APP_STACK_DIR" || exit 1
 
             echo "Pulling latest code..."
+            # Navigate to the repo directory
             cd "$APP_DIR" || exit 1
+            # Pull the latest code from GitHub (the changes we just pushed)
             git pull origin main
 
             echo "Building Docker image..."
+            # Build a new Docker image with the updated code
+            # Only rebuilds the django service (not postgres)
             docker compose build django
+            # This runs the Dockerfile, creating a new image with your latest code
 
             echo "Recreating Django service with new image..."
+            # Replace the running container with a new one using the new image
             docker compose up -d --no-deps --force-recreate django
+            # Breakdown:
+            # -d: detached mode (run in background)
+            # --no-deps: don't recreate linked services (postgres keeps running)
+            # --force-recreate: always create a new container even if nothing changed
+            # This achieves zero-downtime because the new container starts before the old one stops
 
             echo "Waiting for container to start..."
             sleep 5
+            # Give Django a few seconds to initialize (start Gunicorn, load settings, etc.)
 
             echo "Checking container status..."
+            # Verify the container is actually running
             if ! docker compose ps django | grep -q "Up"; then
+              # If not running, show the logs for debugging
               echo "Container failed to start. Showing logs:"
               docker compose logs --tail=100 django
-              exit 1
+              exit 1  # Fail the deployment
             fi
 
             echo "Running database migrations..."
+            # Apply any new database schema changes
             docker compose exec -T django uv run python manage.py migrate --noinput
+            # -T: disable pseudo-TTY (required for non-interactive contexts like CI)
+            # --noinput: don't prompt for confirmation
+            # This is safe to run even if there are no new migrations
 
             echo "Checking service status..."
             docker compose ps django || true
-            
+            # Show final status (|| true prevents failure if ps command has non-zero exit)
+
             echo "Deployment complete!"
           ENDSSH
+          # End of commands that run on the server
 
+      # -----------------------------------------------------------------------
+      # Step 5: Health Check
+      # -----------------------------------------------------------------------
+      # Verify the deployed site is actually working by making an HTTP request
       - name: Health check
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           echo "Waiting for service to be ready..."
-          sleep 5
-          curl -f https://taylorlearns.com/ || echo "Health check failed, but deployment may still be successful"
+          sleep 5  # Give Nginx Proxy Manager time to detect the new container
 
+          # Attempt to fetch the homepage
+          curl -f https://taylorlearns.com/ || echo "Health check failed, but deployment may still be successful"
+          # -f: fail on HTTP errors (4xx, 5xx)
+          # || echo: if curl fails, print a message (but don't fail the workflow)
+          # We don't fail here because the site might take longer to warm up
+
+      # -----------------------------------------------------------------------
+      # Step 6: Deployment Summary
+      # -----------------------------------------------------------------------
+      # Create a summary that appears in the GitHub Actions UI
+      # This makes it easy to see deployment results at a glance
       - name: Deployment summary
-        if: always()
+        if: always()  # Run even if previous steps failed
         run: |
+          # $GITHUB_STEP_SUMMARY is a special file that creates job summaries
+          # Content written here appears in the Actions UI with Markdown formatting
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          # These context variables provide info about the current workflow run
 

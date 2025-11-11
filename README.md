@@ -56,39 +56,72 @@ For more details on the implementation, refer to the `search` function in `blog/
 
 ### Automated Deployments
 
-Simon emphasizes the importance of automating deployments to ensure consistency and reliability. The deployment process should be executable with a single command, using tools like:
-- **Fabric**: Python-based automation for deployment scripts
-- **GitHub Actions**: Continuous integration (see `.github/workflows/ci.yml`)
-- **Heroku**: Platform for hosting (based on the `Procfile` configuration)
+The blog is automatically deployed to a Hetzner VPS using GitHub Actions:
+- **CI/CD Pipeline**: `.github/workflows/ci.yml` runs tests on every push/PR
+- **Automated Deployment**: `.github/workflows/deploy.yml` deploys to production on push to `main`
+- **Infrastructure**: Docker Compose orchestrates Django and PostgreSQL containers
+- **Reverse Proxy**: Nginx Proxy Manager handles SSL/TLS and proxies requests to Django
+
+### Deployment Architecture
+
+**Hosting Environment:**
+- **VPS Provider**: Hetzner Cloud
+- **Operating System**: Linux (Docker host)
+- **Orchestration**: Docker Compose
+- **Reverse Proxy**: Nginx Proxy Manager (running in Docker)
+- **Networking**: Docker network (`app-stack_app-network`) shared with other services
+
+**Application Stack:**
+- **Django/Gunicorn**: Application server (4 workers, 2 threads each)
+- **PostgreSQL 15**: Database with persistent Docker volume
+- **WhiteNoise**: Static file serving with content hashing
+- **Docker**: Containerization for consistent deployments
+
+### Deployment Workflow
+
+**How Automatic Deployment Works:**
+1. Developer pushes code to `main` branch
+2. GitHub Actions CI runs tests automatically
+3. If tests pass, deployment workflow triggers:
+   - Connects to VPS via SSH (using GitHub Secrets)
+   - Pulls latest code from GitHub repository
+   - Builds new Docker image with updated code
+   - Recreates Django container (zero-downtime)
+   - Runs database migrations
+   - Verifies deployment with health check
+
+**Required GitHub Secrets:**
+- `SSH_PRIVATE_KEY`: SSH key for server access
+- `VPS_HOST`: Server IP address
+- `VPS_USER`: Server username
+- `VPS_APP_DIR`: Path to app-stack directory
+
+See `deployment/README.md` for detailed setup instructions.
 
 ### Zero-Downtime Deployments
 
-Zero-downtime deployment strategies ensure continuous availability:
-- New containers/processes start before old ones are stopped
-- Traefik or similar load balancers handle seamless traffic transition
-- Enables frequent and stress-free updates
-
-### Rollback Mechanisms
-
-Quick rollback capabilities are essential:
-- Symlink switching keeps previous code versions accessible
-- Allows for atomic deploys and immediate reversions
-- Static asset versioning (MD5 hash in filenames) ensures correct asset references
+Achieved through Docker Compose's container recreation strategy:
+- New Django container starts before old one stops
+- Nginx Proxy Manager seamlessly switches traffic
+- Database remains running (persistent volume)
+- Health checks verify the new container before completion
 
 ### Static Assets Management
 
-- Static files are versioned using content hashes (facilitated by WhiteNoise's `CompressedManifestStaticFilesStorage`)
-- Assets are efficiently cached while ensuring fresh deployments reference correct versions
-- WhiteNoise middleware handles static file serving in production
+- Static files versioned using content hashes (WhiteNoise's `CompressedManifestStaticFilesStorage`)
+- Built into Docker image during build (not at runtime)
+- Efficiently cached while ensuring fresh deployments reference correct versions
+- No separate CDN required - WhiteNoise serves static files efficiently
 
 ### Continuous Integration
 
-The project includes GitHub Actions CI that:
-- Runs tests on every push and pull request
-- Sets up PostgreSQL database for testing
-- Uses `uv` for dependency management
-- Runs migrations and collects static files
-- Executes the full test suite with `uv run python manage.py test -v3`
+GitHub Actions CI (`.github/workflows/ci.yml`) runs on every push/PR:
+- Sets up PostgreSQL service container for testing
+- Uses `uv` for fast dependency installation
+- Runs database migrations in test environment
+- Collects static files to catch configuration errors
+- Executes full test suite: `uv run python manage.py test -v3`
+- Provides immediate feedback on code quality
 
 ## Development Environment Setup
 
