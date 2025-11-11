@@ -32,13 +32,13 @@ RUN uv sync --frozen
 COPY . .
 
 # Collect static files during build so they're part of the image
-# Set minimal environment variables required for collectstatic
-ENV DJANGO_SECRET=build-time-secret \
+# Use environment variables only for this RUN command (won't persist in image)
+RUN mkdir -p /app/staticfiles /app/media && \
+    DJANGO_SECRET=build-time-secret \
     DB_NAME=placeholder \
     DB_USER=placeholder \
     DB_PASSWORD=placeholder \
-    DB_HOST=placeholder
-RUN mkdir -p /app/staticfiles /app/media && \
+    DB_HOST=placeholder \
     uv run python manage.py collectstatic --noinput
 
 # Create non-root user
