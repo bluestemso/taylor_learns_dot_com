@@ -31,8 +31,16 @@ RUN uv sync --frozen
 # Copy project
 COPY . .
 
+# Create non-root user BEFORE collecting static files
+RUN useradd -m -u 1000 django && \
+    chown -R django:django /app
+
+# Switch to django user for all subsequent operations
+USER django
+
 # Collect static files during build so they're part of the image
 # Use environment variables only for this RUN command (won't persist in image)
+# Run as django user to ensure .venv has correct permissions
 RUN mkdir -p /app/staticfiles /app/media && \
     DJANGO_SECRET=build-time-secret \
     DB_NAME=placeholder \
@@ -40,11 +48,6 @@ RUN mkdir -p /app/staticfiles /app/media && \
     DB_PASSWORD=placeholder \
     DB_HOST=placeholder \
     uv run python manage.py collectstatic --noinput
-
-# Create non-root user
-RUN useradd -m -u 1000 django && \
-    chown -R django:django /app
-USER django
 
 # Expose port
 EXPOSE 8000
