@@ -1,6 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "daisyui";
+
+@theme {
+  --font-sans: "Libre Franklin", sans-serif;
+  --font-serif: Palatino, "Palatino Linotype", "Palatino LT STD", "Book Antiqua", Georgia, serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --breakpoint-lg: 1024px;
+}
 
 /* Custom Styles */
 @layer base {

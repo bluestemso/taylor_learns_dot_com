@@ -49,7 +49,7 @@ The Taylor Learns blog uses **Tailwind CSS v4** with **DaisyUI** component libra
 
 ### Configuration Files
 
-- `tailwind.config.js` - Tailwind and DaisyUI configuration
+- `static/css/src/main.css` - Tailwind and DaisyUI configuration (using v4 CSS-first approach)
 - `postcss.config.js` - PostCSS configuration
 - `package.json` - Node.js dependencies and build scripts
 
@@ -60,7 +60,7 @@ The Taylor Learns blog uses **Tailwind CSS v4** with **DaisyUI** component libra
 ```
 static/css/
   ├── src/
-  │   └── main.css              # Tailwind directives + custom CSS
+  │   └── main.css              # Tailwind v4 config + DaisyUI plugin + custom CSS
   └── tailwind.css              # Generated output (don't edit)
 
 templates/
@@ -73,7 +73,6 @@ templates/
       ├── search_bar.html       # Search form component
       └── ...
 
-tailwind.config.js              # Tailwind configuration
 postcss.config.js               # PostCSS configuration
 package.json                    # npm scripts and dependencies
 ```
@@ -278,12 +277,23 @@ Various button styles for actions.
 
 ### Adding Custom CSS
 
-Edit `static/css/src/main.css` to add custom styles:
+Edit `static/css/src/main.css` to add custom styles.
+
+**Note:** Tailwind v4 uses a new CSS-first configuration approach with `@import` and `@theme` instead of JavaScript config files.
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "daisyui";
+
+@theme {
+  /* Custom theme configuration */
+  --font-sans: "Libre Franklin", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --breakpoint-lg: 1024px;
+
+  /* Add custom colors, spacing, etc. */
+  --color-custom-blue: #0066cc;
+}
 
 /* Use @layer to organize custom styles */
 @layer base {
@@ -313,46 +323,23 @@ Edit `static/css/src/main.css` to add custom styles:
 npm run build:css
 ```
 
-### Extending Tailwind Config
+### Configuring DaisyUI Themes
 
-Edit `tailwind.config.js` to customize Tailwind:
+DaisyUI configuration is done through the `@plugin` directive in your CSS file. The available themes are configured when you import the plugin:
 
-```javascript
-export default {
-  content: [
-    './templates/**/*.html',
-    './blog/**/*.py',
-  ],
-  theme: {
-    extend: {
-      // Add custom colors
-      colors: {
-        'custom-blue': '#0066cc',
-      },
-      // Add custom fonts
-      fontFamily: {
-        sans: ['"Libre Franklin"', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'monospace'],
-      },
-      // Add custom spacing
-      spacing: {
-        '128': '32rem',
-      },
-    },
-  },
-  plugins: [
-    require('daisyui'),
-  ],
-  daisyui: {
-    themes: ['lofi', 'black'],
-    darkTheme: 'black',
-  },
-}
+```css
+@plugin "daisyui";
+```
+
+To switch between "lofi" (light) and "black" (dark) themes, change the `data-theme` attribute in `templates/base.html`:
+
+```html
+<html lang="en-gb" data-theme="lofi">  <!-- or data-theme="black" -->
 ```
 
 ### Changing Fonts
 
-Fonts are loaded in `base.html` and configured in `tailwind.config.js`.
+Fonts are loaded in `base.html` and configured in `static/css/src/main.css`.
 
 **To change fonts:**
 
@@ -361,10 +348,11 @@ Fonts are loaded in `base.html` and configured in `tailwind.config.js`.
 <link href="https://fonts.googleapis.com/css2?family=Your+Font:wght@400;700&display=swap" rel="stylesheet">
 ```
 
-2. Update `tailwind.config.js`:
-```javascript
-fontFamily: {
-  sans: ['"Your Font"', 'sans-serif'],
+2. Update `static/css/src/main.css` in the `@theme` section:
+```css
+@theme {
+  --font-sans: "Your Font", sans-serif;
+  --font-mono: "Your Mono Font", monospace;
 }
 ```
 

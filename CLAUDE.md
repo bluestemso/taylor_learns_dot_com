@@ -237,9 +237,8 @@ The blog uses **Tailwind CSS v4 with DaisyUI**:
 ### Key Design Files
 
 - `FRONTEND_DESIGN_GUIDE.md` - Complete guide for making frontend changes
-- `tailwind.config.js` - Tailwind configuration with DaisyUI plugin and themes
+- `static/css/src/main.css` - Tailwind v4 configuration with DaisyUI plugin and custom CSS
 - `postcss.config.js` - PostCSS configuration for Tailwind processing
-- `static/css/src/main.css` - Tailwind directives and custom CSS
 - `static/css/tailwind.css` - Generated output file (don't edit directly)
 
 ### Making Design Changes
