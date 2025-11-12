@@ -67,9 +67,9 @@ ssh "${SSH_HOST}" bash <<EOF
 set -e
 cd "${REMOTE_APP_DIR}"
 
-# Get database credentials from docker compose config
-DB_NAME=\$(docker compose exec -T django printenv DB_NAME | tr -d '\r')
-DB_USER=\$(docker compose exec -T django printenv DB_USER | tr -d '\r')
+# Get database credentials from postgres container (where they're actually set)
+DB_NAME=\$(docker compose exec -T postgres printenv POSTGRES_DB | tr -d '\r')
+DB_USER=\$(docker compose exec -T postgres printenv POSTGRES_USER | tr -d '\r')
 
 echo "Creating dump of database: \${DB_NAME}"
 
