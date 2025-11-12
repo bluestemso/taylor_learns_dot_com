@@ -58,40 +58,41 @@ echo ""
 mkdir -p "${LOCAL_SCRIPTS_DIR}"
 
 echo "Step 1: Creating database dump on production server..."
-echo "  Running: ssh ${SSH_HOST} 'cd ${REMOTE_APP_DIR} && docker compose exec -T postgres ...'"
 echo ""
 
 # Create dump on remote server using docker compose exec
 # The -T flag disables pseudo-tty allocation (required for piping)
-ssh "${SSH_HOST}" bash <<EOF
+# We use bash -c with proper quoting to ensure the redirect happens remotely
+ssh "${SSH_HOST}" "bash -c '
 set -e
-cd "${REMOTE_APP_DIR}"
+cd \"${REMOTE_APP_DIR}\"
 
-# Get database credentials from postgres container (where they're actually set)
-DB_NAME=\$(docker compose exec -T postgres printenv POSTGRES_DB | tr -d '\r')
-DB_USER=\$(docker compose exec -T postgres printenv POSTGRES_USER | tr -d '\r')
+echo \"Getting database credentials...\"
+DB_NAME=\$(docker compose exec -T postgres printenv POSTGRES_DB | tr -d \"\\r\")
+DB_USER=\$(docker compose exec -T postgres printenv POSTGRES_USER | tr -d \"\\r\")
 
-echo "Creating dump of database: \${DB_NAME}"
+echo \"Creating dump of database: \${DB_NAME}\"
 
-# Create the dump
-docker compose exec -T postgres pg_dump \\
-    -U "\${DB_USER}" \\
-    -d "\${DB_NAME}" \\
-    --clean \\
-    --if-exists \\
-    --no-owner \\
-    --no-acl \\
-    > "${DUMP_FILE}"
+# Create the dump (redirect happens on remote server)
+docker compose exec -T postgres pg_dump \
+    -U \"\${DB_USER}\" \
+    -d \"\${DB_NAME}\" \
+    --clean \
+    --if-exists \
+    --no-owner \
+    --no-acl \
+    > \"${DUMP_FILE}\"
 
 # Check if dump was created successfully
-if [ ! -f "${DUMP_FILE}" ]; then
-    echo "ERROR: Dump file was not created!"
+if [ ! -f \"${DUMP_FILE}\" ]; then
+    echo \"ERROR: Dump file was not created!\"
     exit 1
 fi
 
 # Show file size
-du -h "${DUMP_FILE}"
-EOF
+echo \"Dump created successfully:\"
+du -h \"${DUMP_FILE}\"
+'"
 
 if [ $? -ne 0 ]; then
     echo ""
