@@ -65,21 +65,16 @@ uv run python manage.py reindex_all
 
 ### Working with Production Data Locally
 
-To develop with a local copy of production data:
+To develop with a local copy of production data (all commands run locally):
 
 ```bash
-# 1. On PRODUCTION SERVER: Create database dump
-ssh user@server
-cd ~/app-stack/taylor_learns_dot_com
-./scripts/dump-production-db.sh
+# 1. Fetch production database (connects via SSH automatically)
+./scripts/fetch-production-db.sh user@server ~/app-stack/taylor_learns_dot_com
 
-# 2. On LOCAL MACHINE: Download dump
-scp user@server:~/app-stack/taylor_learns_dot_com/db_dump_*.sql ./scripts/
-
-# 3. On LOCAL MACHINE: Restore to local database
+# 2. Restore to local database
 ./scripts/restore-local-db.sh scripts/db_dump_2024-11-12.sql
 
-# 4. Start development with production data
+# 3. Start development with production data
 docker compose up -d          # Run everything in Docker
 # OR
 docker compose up -d postgres # PostgreSQL in Docker only

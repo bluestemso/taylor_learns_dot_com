@@ -25,44 +25,37 @@ Working with a local copy of production data is a common workflow. These scripts
 
 ## Workflow
 
-### 1. Create Production Database Dump
+All commands run on your **LOCAL MACHINE**. The fetch script handles SSH connections to production automatically.
 
-**Run this on the PRODUCTION SERVER:**
-
-```bash
-# SSH into production server
-ssh user@your-server
-
-# Navigate to app directory
-cd ~/app-stack/taylor_learns_dot_com
-
-# Create database dump
-./scripts/dump-production-db.sh
-```
-
-This creates a file named `db_dump_YYYY-MM-DD.sql` with a timestamped snapshot.
-
-### 2. Download Dump to Local Machine
+### 1. Fetch Production Database
 
 **Run this on your LOCAL MACHINE:**
 
 ```bash
-# Download the dump file
-scp user@your-server:~/app-stack/taylor_learns_dot_com/db_dump_*.sql ./scripts/
+# Fetch database dump from production
+./scripts/fetch-production-db.sh user@your-server ~/app-stack/taylor_learns_dot_com
 
-# Or if using a specific date
-scp user@your-server:~/app-stack/taylor_learns_dot_com/db_dump_2024-11-12.sql ./scripts/
+# Or use shorter path (defaults to ~/app-stack/taylor_learns_dot_com)
+./scripts/fetch-production-db.sh user@your-server
+
+# Or set environment variables for convenience
+export PROD_SSH_HOST=user@your-server
+export PROD_APP_DIR=~/app-stack/taylor_learns_dot_com
+./scripts/fetch-production-db.sh
 ```
 
-### 3. Restore to Local Database
+This script will:
+1. SSH into your production server
+2. Use `docker compose exec` to create a PostgreSQL dump
+3. Download the dump to `./scripts/db_dump_YYYY-MM-DD.sql`
+4. Clean up the remote dump file
+
+### 2. Restore to Local Database
 
 **Run this on your LOCAL MACHINE:**
 
 ```bash
-# Make sure you're in the project root directory
-cd ~/taylor_learns_dot_com
-
-# Restore the dump
+# Restore the dump (use the filename from step 1)
 ./scripts/restore-local-db.sh scripts/db_dump_2024-11-12.sql
 ```
 
@@ -72,7 +65,7 @@ The restore script will:
 - Import all data from the dump
 - Run Django migrations to ensure schema is current
 
-### 4. Start Development
+### 3. Start Development
 
 You're now ready to develop with production data!
 
@@ -199,22 +192,31 @@ sleep 5  # Wait 5 seconds
 ./scripts/restore-local-db.sh scripts/db_dump_2024-11-12.sql
 ```
 
-### Large dump files
+### SSH connection issues
 
-Production dumps can be large. To save space, compress before downloading:
+If you get "Permission denied" or "Connection refused":
 
 ```bash
-# On production server
-gzip db_dump_2024-11-12.sql
+# Test SSH connection first
+ssh user@your-server "echo 'Connection successful'"
 
-# Download compressed
-scp user@server:~/app/db_dump_2024-11-12.sql.gz ./scripts/
+# Make sure you can access the remote directory
+ssh user@your-server "ls -la ~/app-stack/taylor_learns_dot_com"
 
-# Decompress locally
+# Verify Docker is accessible remotely
+ssh user@your-server "docker compose version"
+```
+
+### Large dump files
+
+Production dumps can be large. The fetch script handles this automatically, but if you need to manually compress:
+
+```bash
+# Compress existing dump
+gzip scripts/db_dump_2024-11-12.sql
+
+# Decompress when needed
 gunzip scripts/db_dump_2024-11-12.sql.gz
-
-# Then restore
-./scripts/restore-local-db.sh scripts/db_dump_2024-11-12.sql
 ```
 
 ## Data Sanitization
