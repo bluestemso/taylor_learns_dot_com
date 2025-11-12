@@ -9,7 +9,7 @@
 #   ./scripts/fetch-production-db.sh [SSH_HOST] [REMOTE_APP_DIR]
 #
 # Examples:
-#   ./scripts/fetch-production-db.sh user@server.com ~/app-stack/taylor_learns_dot_com
+#   ./scripts/fetch-production-db.sh user@server.com /home/tschaack/app-stack
 #   ./scripts/fetch-production-db.sh user@server.com  # Uses default path
 #
 # Environment Variables (optional):
@@ -25,8 +25,8 @@ DUMP_FILE="db_dump_${TIMESTAMP}.sql"
 LOCAL_SCRIPTS_DIR="./scripts"
 
 # Parse arguments or use environment variables
-SSH_HOST="${1:-${PROD_SSH_HOST}}"
-REMOTE_APP_DIR="${2:-${PROD_APP_DIR:-~/app-stack/taylor_learns_dot_com}}"
+SSH_HOST="${1:-${PROD_SSH_HOST:-tschaack@65.109.139.248}}"
+REMOTE_APP_DIR="${2:-${PROD_APP_DIR:-/home/tschaack/app-stack}}"
 
 # Validate SSH host is provided
 if [ -z "$SSH_HOST" ]; then
@@ -36,11 +36,11 @@ if [ -z "$SSH_HOST" ]; then
     echo ""
     echo "Examples:"
     echo "  $0 user@server.com"
-    echo "  $0 user@server.com ~/app-stack/taylor_learns_dot_com"
+    echo "  $0 user@server.com /home/tschaack/app-stack"
     echo ""
     echo "Or set environment variables:"
     echo "  export PROD_SSH_HOST=user@server.com"
-    echo "  export PROD_APP_DIR=~/app-stack/taylor_learns_dot_com"
+    echo "  export PROD_APP_DIR=/home/tschaack/app-stack"
     echo "  $0"
     exit 1
 fi
