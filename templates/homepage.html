@@ -10,19 +10,19 @@
 {% endblock %}
 
 {% block primary %}
-<h2 class="ttu f5 newgreen tracked b mb4">Latest Writing</h2>
+<h2 class="uppercase text-sm text-primary font-bold tracking-wider mb-6">Latest Writing</h2>
 
 {% load blog_tags %}
 {% blog_mixed_list_with_dates items day_headers=1 %}
 
 {% if entries %}
-<div class="mt5 pt4" style="border-top: 1px solid #ccc;">
-  <h3 class="ttu f5 newgreen tracked b mb3">Highlights</h3>
-  <ul style="list-style: none; padding: 0;">
+<div class="mt-8 pt-6 border-t border-base-300">
+  <h3 class="uppercase text-sm text-primary font-bold tracking-wider mb-4">Highlights</h3>
+  <ul class="list-none pl-0">
   {% for entry in entries %}
-    <li class="mb2" style="list-style-type: square; margin-left: 1em;">
-      <a href="{{ entry.get_absolute_url }}">{{ entry }}</a>
-      <span class="black-50 f6">- {{ entry.created.date }}</span>
+    <li class="mb-3 ml-4" style="list-style-type: square;">
+      <a href="{{ entry.get_absolute_url }}" class="link">{{ entry }}</a>
+      <span class="opacity-50 text-sm">- {{ entry.created.date }}</span>
     </li>
   {% endfor %}
   </ul>

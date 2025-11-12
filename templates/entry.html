@@ -13,18 +13,18 @@
 
 {% block item_content %}
 <div data-permalink-context="{{ entry.get_absolute_url }}">
-<!-- Date Header with blue border -->
-<div class="bb b--newgreen w-100 ibmplexmono ttu f6 dt-published mb5">
+<!-- Date Header with border -->
+<div class="border-b-2 border-primary w-full font-mono uppercase text-sm mb-8 dt-published">
   {{ entry.created|date:"F j, Y" }}
 </div>
 
 <!-- Post Title -->
-<h1 class="f2 fw8 lh-solid mv1 posttitle">{{ entry.title|typography }}</h1>
+<h1 class="text-4xl font-extrabold leading-none my-2">{{ entry.title|typography }}</h1>
 
 {% include "_draft_warning.html" %}
 
 <!-- Post Content -->
-<div class="postcontainer">
+<div class="postcontainer prose prose-lg max-w-none">
 {{ entry.body_rendered|xhtml|resize_images_to_fit_width:"450"|typography|xhtml2html }}
 </div>
 
@@ -35,8 +35,8 @@
 {% endif %}
 </div>
 
-<div class="entryFooter mt4 pt3" style="border-top: 1px solid #0066cc; font-size: 0.875rem; color: rgba(0,0,0,0.5);">
-Posted <a href="/{{ entry.created|date:"Y/M/j/" }}">{{ entry.created|date:"jS F Y" }}</a> at {{ entry.created|date:"f A"|lower }}
+<div class="mt-6 pt-4 border-t border-primary text-sm opacity-50">
+Posted <a href="/{{ entry.created|date:"Y/M/j/" }}" class="link">{{ entry.created|date:"jS F Y" }}</a> at {{ entry.created|date:"f A"|lower }}
 </div>
 <p class="edit-page-link" data-admin-url="{{ entry.edit_url }}" style="display: none;"></p>
 {% endblock %}
@@ -44,29 +44,29 @@ Posted <a href="/{{ entry.created|date:"Y/M/j/" }}">{{ entry.created|date:"jS F 
 {% block recent_articles_header %}More recent articles{% endblock %}
 
 {% block secondary %}
-<div class="metabox">
-<p class="this-is">This is <strong>{{ entry.title|typography }}</strong> by Taylor Learns, posted on <a href="/{{ entry.created|date:"Y/M/j/" }}">{{ entry.created|date:"jS F Y" }}</a>.</p>
+<div class="card bg-base-200 p-6 mb-6">
+<p class="mb-4"><strong>This is {{ entry.title|typography }}</strong> by Taylor Learns, posted on <a href="/{{ entry.created|date:"Y/M/j/" }}" class="link">{{ entry.created|date:"jS F Y" }}</a>.</p>
 {% if entry.series %}{% with entry.series_info as series_info %}
-<div class="series-info">
-  <p>Part of series <strong><a href="/series/{{ entry.series.slug }}/">{{ entry.series.title }}</a></strong></p>
-  <ol start="{{ series_info.start }}">
+<div class="mb-4">
+  <p class="mb-2">Part of series <strong><a href="/series/{{ entry.series.slug }}/" class="link">{{ entry.series.title }}</a></strong></p>
+  <ol start="{{ series_info.start }}" class="list-decimal list-inside">
     {% for other in series_info.entries %}
       {% if other.pk == entry.pk %}
-        <li><strong>{{ other }}</strong></a> - {{ other.created }} </li>
+        <li><strong>{{ other }}</strong> - {{ other.created }} </li>
       {% else %}
-        <li><a href="{{ other.get_absolute_url }}">{{ other }}</a> - {{ other.created }} </li>
+        <li><a href="{{ other.get_absolute_url }}" class="link">{{ other }}</a> - {{ other.created }} </li>
       {% endif %}
     {% endfor %}
-    {% if series_info.has_next %}<li style="list-style-type: none;"><a href="/series/{{ entry.series.slug }}/">&#8230; more</a></li>{% endif %}
+    {% if series_info.has_next %}<li class="list-none"><a href="/series/{{ entry.series.slug }}/" class="link">&#8230; more</a></li>{% endif %}
   </ol>
 </div>
 {% endwith %}{% endif %}
 {% include "_tags.html" with obj=entry %}
 {% with entry.next_by_created as next_entry %}{% if next_entry %}
-<p><strong>Next:</strong> <a href="{{ next_entry.get_absolute_url }}">{{ next_entry.title }}</a></p>
+<p class="mb-2"><strong>Next:</strong> <a href="{{ next_entry.get_absolute_url }}" class="link">{{ next_entry.title }}</a></p>
 {% endif %}{% endwith %}
 {% with entry.previous_by_created as previous_entry %}{% if previous_entry %}
-<p><strong>Previous:</strong> <a href="{{ previous_entry.get_absolute_url }}">{{ previous_entry.title }}</a></p>
+<p class="mb-2"><strong>Previous:</strong> <a href="{{ previous_entry.get_absolute_url }}" class="link">{{ previous_entry.title }}</a></p>
 {% endif %}{% endwith %}
 <div data-ea-publisher="simonwillisonnet" data-ea-type="image"></div>
 </div>
@@ -75,7 +75,7 @@ Posted <a href="/{{ entry.created|date:"Y/M/j/" }}">{{ entry.created|date:"jS F 
 {% endblock %}
 
 {% block footer %}
-{% if previously_hosted %}<p id="previouslyhosted">Previously hosted at {{ previously_hosted }}</p>{% endif %}
+{% if previously_hosted %}<p id="previouslyhosted" class="text-sm opacity-70">Previously hosted at {{ previously_hosted }}</p>{% endif %}
 {{ block.super }}
 {% if entry.tweet_html %}<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>{% endif %}
 {% endblock %}

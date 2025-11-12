@@ -1,416 +1,486 @@
 # Frontend Design System Guide
 ## Taylor Learns Blog
 
-This guide outlines how to make changes to the front-end design of the Taylor Learns blog. It provides documentation on the design system architecture, key files, and common modification patterns.
+This guide outlines how to make changes to the front-end design of the Taylor Learns blog using **Tailwind CSS v4** and **DaisyUI**.
 
 ---
 
 ## Table of Contents
 
 1. [Design System Overview](#design-system-overview)
-2. [File Structure](#file-structure)
-3. [Color Palette](#color-palette)
-4. [Typography](#typography)
-5. [Layout System](#layout-system)
-6. [Common Modifications](#common-modifications)
-7. [Component Reference](#component-reference)
-8. [Responsive Design](#responsive-design)
-9. [Best Practices](#best-practices)
+2. [Technology Stack](#technology-stack)
+3. [File Structure](#file-structure)
+4. [Getting Started](#getting-started)
+5. [Themes](#themes)
+6. [DaisyUI Components](#daisyui-components)
+7. [Customization](#customization)
+8. [Common Modifications](#common-modifications)
+9. [Responsive Design](#responsive-design)
+10. [Best Practices](#best-practices)
 
 ---
 
 ## Design System Overview
 
-The Taylor Learns blog uses a custom design system built with:
-- **Custom CSS** with CSS custom properties (CSS variables)
-- **Utility-first approach** inspired by Tachyons CSS
-- **Mobile-first responsive design** with a 1024px breakpoint
-- **Blue accent theme** (#0066cc primary color)
+The Taylor Learns blog uses **Tailwind CSS v4** with **DaisyUI** component library:
+
+- **Tailwind CSS v4**: Utility-first CSS framework for rapid UI development
+- **DaisyUI**: Component library providing pre-built, themeable components
+- **Themes**: "lofi" (light) and "black" (dark) themes
+- **Mobile-first responsive design** with 1024px breakpoint (`lg:` prefix)
 
 ### Core Principles
 
-1. **Consistency**: Use design tokens (CSS variables) for all colors, spacing, and typography
-2. **Reusability**: Leverage utility classes for common patterns
-3. **Maintainability**: Keep styles organized and well-commented
-4. **Accessibility**: Ensure proper contrast, focus states, and semantic HTML
+1. **Utility-First**: Use Tailwind utility classes directly in templates
+2. **Component-Based**: Leverage DaisyUI components for common UI patterns
+3. **Responsive**: Mobile-first design with responsive modifiers
+4. **Themeable**: Use DaisyUI theme system for consistent colors
+5. **Performance**: CSS is purged and minified for production
+
+---
+
+## Technology Stack
+
+### Build Tools
+
+- **Tailwind CSS CLI** - Builds CSS from templates
+- **PostCSS** - Processes CSS with autoprefixer
+- **npm** - Manages Node.js dependencies
+
+### Configuration Files
+
+- `tailwind.config.js` - Tailwind and DaisyUI configuration
+- `postcss.config.js` - PostCSS configuration
+- `package.json` - Node.js dependencies and build scripts
 
 ---
 
 ## File Structure
 
-### Primary Files
-
 ```
 static/css/
-  └── design-system.css       # Main stylesheet with all design system styles
+  ├── src/
+  │   └── main.css              # Tailwind directives + custom CSS
+  └── tailwind.css              # Generated output (don't edit)
 
 templates/
-  ├── base.html               # Base template with head/scripts
-  ├── bighead.html            # Homepage and list pages layout
-  ├── smallhead.html          # Blog post detail layout
-  ├── homepage.html           # Homepage content
-  ├── entry.html              # Blog post content
+  ├── base.html                 # Base template with <head>, scripts
+  ├── bighead.html              # Homepage/list layout with drawer
+  ├── smallhead.html            # Blog post detail layout with drawer
+  ├── entry.html                # Blog entry content
+  ├── homepage.html             # Homepage content
   └── includes/
-      └── search_bar.html     # Reusable search component
-```
+      ├── search_bar.html       # Search form component
+      └── ...
 
-### Design Documentation
-
-```
-FRONTEND_DESIGN_GUIDE.md      # This guide (you're reading it!)
-static/css/design-system.css  # Main stylesheet
-```
-
----
-
-## Color Palette
-
-### CSS Variables
-
-All colors are defined in `static/css/design-system.css` at the top in the `:root` selector:
-
-```css
-:root {
-  /* Primary Colors - Blue Theme */
-  --color-primary-blue: #0066cc;
-  --color-bright-blue: #00a0ff;
-  --color-light-blue: #e6f2ff;
-
-  /* Text Colors */
-  --color-text-black: #212121;
-  --color-black-50: rgba(0, 0, 0, 0.5);
-  --color-black-10: rgba(0, 0, 0, 0.1);
-  --color-black-20: rgba(0, 0, 0, 0.2);
-
-  /* Background Colors */
-  --color-bg-white: #fffff8;     /* Off-white page background */
-  --color-near-white: #f3f3f3;   /* Sidebar background */
-}
-```
-
-### Changing the Primary Color
-
-To change the primary color theme:
-
-1. Open `static/css/design-system.css`
-2. Find the `:root` selector at the top
-3. Update these three variables:
-   ```css
-   --color-primary-blue: #YOUR_NEW_COLOR;
-   --color-bright-blue: #YOUR_LIGHTER_VARIANT;
-   --color-light-blue: #YOUR_BACKGROUND_TINT;
-   ```
-4. The legacy names (`--color-newgreen`, etc.) will inherit these values
-
-### Utility Classes
-
-```css
-.newgreen          /* Blue text (legacy name, uses --color-primary-blue) */
-.black             /* Primary text color */
-.black-50          /* Secondary text (50% opacity) */
-
-.bg-newgreen       /* Blue background */
-.bg-white          /* White background */
-.bg-near-white     /* Light gray background */
-
-.b--newgreen       /* Blue border */
-.b--black-10       /* Light gray border */
-.b--black-20       /* Medium gray border */
+tailwind.config.js              # Tailwind configuration
+postcss.config.js               # PostCSS configuration
+package.json                    # npm scripts and dependencies
 ```
 
 ---
 
-## Typography
+## Getting Started
 
-### Font Families
+### Initial Setup
 
-The design uses three Google Fonts:
+```bash
+# Install Node.js dependencies
+npm install
 
-```css
---font-sans: "Libre Franklin", sans-serif;      /* Body text, UI */
---font-mono: "IBM Plex Mono", monospace;        /* Dates, code */
---font-code: Consolas, "Liberation Mono", ...;  /* Code blocks */
+# Build CSS for production (minified)
+npm run build:css
+
+# Watch for changes during development
+npm run watch:css
 ```
 
-**To change fonts:**
-1. Update font URLs in `templates/base.html` (line 13)
-2. Update CSS variables in `static/css/design-system.css`
+### Development Workflow
 
-### Font Size Scale
+1. Edit templates (`.html` files) using Tailwind utilities
+2. For custom styles, edit `static/css/src/main.css`
+3. Run `npm run watch:css` to auto-rebuild on changes
+4. Refresh browser to see updates
 
-Based on Tachyons scale (15px base):
+### Building for Production
 
-| Class | Size | Use Case |
-|-------|------|----------|
-| `.f1` | 3rem (48px) | Large headings |
-| `.f2` | 2.25rem (36px) | Post titles |
-| `.f3` | 1.5rem (24px) | Section headings |
-| `.f4` | 1.25rem (20px) | Body text, subheadings |
-| `.f5` | 1rem (16px) | Small headings |
-| `.f6` | 0.875rem (14px) | Metadata, dates |
-| `.f7` | 0.75rem (12px) | Smallest text |
+```bash
+# Build minified CSS
+npm run build:css
 
-### Font Weight Classes
-
-```css
-.fw3  /* 300 - Light */
-.fw4  /* 400 - Regular */
-.fw6  /* 600 - Semi-bold */
-.fw7  /* 700 - Bold */
-.fw8  /* 800 - Extra-bold */
-```
-
-### Line Height
-
-```css
-.lh-solid  /* 1.0 - Tight for headings */
-.lh-copy   /* 1.6 - Readable for body text */
-.lh-title  /* 1.2 - Medium for titles */
-```
-
-### Text Transforms
-
-```css
-.ttu       /* Text transform: uppercase */
-.tracked   /* Letter spacing: 0.1em */
-.i         /* Italic */
-.b         /* Bold */
+# Collect static files for Django
+uv run python manage.py collectstatic --noinput
 ```
 
 ---
 
-## Layout System
+## Themes
 
-### Sidebar Navigation
+### Available Themes
 
-The design features a fixed sidebar on desktop (≥1024px):
+The blog uses two DaisyUI themes:
 
-```css
-.sidebar-nav {
-  width: 223px;        /* Fixed sidebar width */
-  position: fixed;
-  height: 100vh;
-}
+1. **lofi** (default light theme)
+   - Clean, minimal design
+   - High contrast
+   - Subtle colors
+
+2. **black** (dark theme)
+   - Dark background
+   - Light text
+   - High contrast
+
+### Setting the Theme
+
+Themes are set via the `data-theme` attribute in `base.html`:
+
+```html
+<html lang="en-gb" data-theme="lofi">
 ```
 
-Main content is offset:
+To switch themes:
+- Change `data-theme="lofi"` to `data-theme="black"`
+- Or implement theme toggle with JavaScript
+
+### Theme Colors
+
+DaisyUI provides semantic color classes:
+
+- `primary` - Primary brand color
+- `secondary` - Secondary color
+- `accent` - Accent color
+- `neutral` - Neutral colors
+- `base-100`, `base-200`, `base-300` - Background colors
+- `info`, `success`, `warning`, `error` - Status colors
+
+Use in templates:
+```html
+<div class="bg-primary text-primary-content">Primary background</div>
+<button class="btn btn-secondary">Secondary button</button>
+```
+
+---
+
+## DaisyUI Components
+
+### Components in Use
+
+#### 1. Drawer (Sidebar Navigation)
+
+Used in `bighead.html` and `smallhead.html` for sidebar navigation.
+
+```html
+<div class="drawer lg:drawer-open">
+  <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
+
+  <!-- Main content -->
+  <div class="drawer-content">
+    <!-- Your page content -->
+  </div>
+
+  <!-- Sidebar -->
+  <div class="drawer-side">
+    <label for="sidebar-drawer" class="drawer-overlay"></label>
+    <aside class="bg-base-200 min-h-screen w-64">
+      <!-- Sidebar content -->
+    </aside>
+  </div>
+</div>
+```
+
+**Key features:**
+- `lg:drawer-open` - Always open on desktop (≥1024px)
+- Slides in/out on mobile via checkbox toggle
+- Overlay closes drawer when clicked
+
+#### 2. Navbar (Mobile Header)
+
+Mobile-only header with hamburger menu toggle.
+
+```html
+<div class="navbar bg-base-200 lg:hidden">
+  <div class="flex-none">
+    <label for="sidebar-drawer" class="btn btn-square btn-ghost">
+      <!-- Hamburger icon SVG -->
+    </label>
+  </div>
+  <div class="flex-1">
+    <h1 class="text-xl font-extrabold">Taylor Learns</h1>
+  </div>
+</div>
+```
+
+#### 3. Menu (Navigation Links)
+
+Used inside the drawer for navigation items.
+
+```html
+<nav class="menu">
+  <li><a href="/" class="menu-item">Home</a></li>
+  <li><a href="/about/" class="menu-item">About</a></li>
+  <li><a href="/tags/" class="menu-item">Tags</a></li>
+</nav>
+```
+
+#### 4. Form Controls (Search Bar)
+
+Search input with joined button (`includes/search_bar.html`).
+
+```html
+<form action="/search/" method="GET">
+  <div class="join w-full">
+    <input type="search"
+           class="input input-bordered join-item flex-1"
+           name="q"
+           placeholder="Search this site">
+    <button type="submit" class="btn btn-primary join-item">
+      <!-- Search icon -->
+    </button>
+  </div>
+</form>
+```
+
+#### 5. Badge (Tags)
+
+Used for displaying tags.
+
+```html
+<a href="/tags/{{ tag }}/" class="badge badge-primary badge-outline">
+  {{ tag }}
+</a>
+```
+
+#### 6. Card (Content Containers)
+
+Used for sidebar content and special sections.
+
+```html
+<div class="card bg-base-200 p-6">
+  <p>Card content here</p>
+</div>
+```
+
+#### 7. Button
+
+Various button styles for actions.
+
+```html
+<button class="btn">Default</button>
+<button class="btn btn-primary">Primary</button>
+<button class="btn btn-secondary">Secondary</button>
+<button class="btn btn-ghost">Ghost</button>
+<button class="btn btn-square">Square</button>
+```
+
+---
+
+## Customization
+
+### Adding Custom CSS
+
+Edit `static/css/src/main.css` to add custom styles:
 
 ```css
-.sidebar-layout {
-  margin-left: 223px;  /* Desktop: offset for sidebar */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Use @layer to organize custom styles */
+@layer base {
+  /* Custom base styles */
+  html {
+    font-size: 15px;
+  }
 }
 
-@media (max-width: 1023px) {
-  .sidebar-layout {
-    margin-left: 0;    /* Mobile: no offset */
-    margin-top: 60px;   /* Mobile: offset for fixed header */
+@layer components {
+  /* Custom component classes */
+  .my-custom-component {
+    @apply bg-primary text-white p-4 rounded;
+  }
+}
+
+@layer utilities {
+  /* Custom utility classes */
+  .text-balance {
+    text-wrap: balance;
   }
 }
 ```
 
-### Content Width
-
-```css
-.w-two-thirds-ns  /* 66.67% width on desktop (≥1024px) */
-.center           /* Center with auto margins */
-.mw8              /* Max width: 1024px */
+**After editing, rebuild:**
+```bash
+npm run build:css
 ```
 
-### Spacing Scale
+### Extending Tailwind Config
 
-All spacing uses a consistent scale:
+Edit `tailwind.config.js` to customize Tailwind:
 
-```css
---spacing-1: 0.25rem;   /* 4px */
---spacing-2: 0.5rem;    /* 8px */
---spacing-3: 0.75rem;   /* 12px */
---spacing-4: 1rem;      /* 16px */
---spacing-5: 1.5rem;    /* 24px */
---spacing-6: 2rem;      /* 32px */
---spacing-7: 2.5rem;    /* 40px */
---spacing-8: 3rem;      /* 48px */
+```javascript
+export default {
+  content: [
+    './templates/**/*.html',
+    './blog/**/*.py',
+  ],
+  theme: {
+    extend: {
+      // Add custom colors
+      colors: {
+        'custom-blue': '#0066cc',
+      },
+      // Add custom fonts
+      fontFamily: {
+        sans: ['"Libre Franklin"', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'monospace'],
+      },
+      // Add custom spacing
+      spacing: {
+        '128': '32rem',
+      },
+    },
+  },
+  plugins: [
+    require('daisyui'),
+  ],
+  daisyui: {
+    themes: ['lofi', 'black'],
+    darkTheme: 'black',
+  },
+}
 ```
 
-### Spacing Utilities
+### Changing Fonts
 
-**Padding:**
-```css
-.pa0, .pa2, .pa3, .pa4, .pa5    /* All sides */
-.ph0, .ph3                       /* Horizontal */
-.pv2, .pv3, .pv4, .pv5          /* Vertical */
-.pt4, .pt5                       /* Top */
-.pb2, .pb4                       /* Bottom */
-.pr3, .pl3                       /* Right, Left */
+Fonts are loaded in `base.html` and configured in `tailwind.config.js`.
+
+**To change fonts:**
+
+1. Update Google Fonts link in `base.html`:
+```html
+<link href="https://fonts.googleapis.com/css2?family=Your+Font:wght@400;700&display=swap" rel="stylesheet">
 ```
 
-**Margin:**
-```css
-.ma0                             /* All sides: 0 */
-.mt1, .mt2, .mt3, .mt4, .mt5    /* Top */
-.mb2, .mb3, .mb4, .mb5          /* Bottom */
-.mv1, .mv2                       /* Vertical */
-.mh3                             /* Horizontal */
+2. Update `tailwind.config.js`:
+```javascript
+fontFamily: {
+  sans: ['"Your Font"', 'sans-serif'],
+}
 ```
+
+3. Rebuild CSS: `npm run build:css`
 
 ---
 
 ## Common Modifications
 
-### Adjusting Feed Entry Spacing
+### Changing Colors
 
-Feed entries spacing is controlled in `static/css/design-system.css` under "Feed Entry Styles":
+**Option 1: Use DaisyUI theme colors**
 
-```css
-.day, .segment, .entry, .blogmark, .quote, .note {
-  padding: var(--spacing-6) 0;           /* Vertical padding */
-  border-bottom: 2px solid var(--color-black-10);  /* Separator */
-  margin-bottom: var(--spacing-6);       /* Space between entries */
+Just use semantic classes like `bg-primary`, `text-secondary`, etc.
+
+**Option 2: Create custom DaisyUI theme**
+
+Edit `tailwind.config.js`:
+
+```javascript
+daisyui: {
+  themes: [
+    {
+      mytheme: {
+        "primary": "#0066cc",
+        "secondary": "#00a0ff",
+        "accent": "#6b2d8a",
+        "neutral": "#212121",
+        "base-100": "#fffff8",
+        "info": "#3abff8",
+        "success": "#36d399",
+        "warning": "#fbbd23",
+        "error": "#f87272",
+      },
+    },
+  ],
 }
 ```
 
-**To increase spacing:**
-```css
-padding: var(--spacing-7) 0;      /* Change to spacing-7 or spacing-8 */
-margin-bottom: var(--spacing-7);
-```
+Then set `data-theme="mytheme"` in `base.html`.
 
-### Changing Link Hover Effects
+### Modifying Layout
 
-Link hover effects are defined in the "Links" section:
+**Sidebar width:**
 
-```css
-a:hover {
-  box-shadow: inset 0 -24px 0 rgba(0, 160, 255, 0.3);
-}
-```
-
-**To change hover style:**
-```css
-/* Option 1: Underline */
-a:hover {
-  text-decoration: underline;
-  box-shadow: none;
-}
-
-/* Option 2: Background color */
-a:hover {
-  background-color: var(--color-light-blue);
-  box-shadow: none;
-}
-
-/* Option 3: Different shadow color/height */
-a:hover {
-  box-shadow: inset 0 -2px 0 var(--color-primary-blue);
-}
-```
-
-### Modifying the Search Bar
-
-Search bar styles are in the "Search Bar Styling" section:
-
-```css
-.search-input {
-  padding: var(--spacing-2) var(--spacing-3);
-  font-size: var(--font-size-f7);
-}
-
-.search-submit {
-  min-width: 40px;
-  background-color: var(--color-primary-blue);
-}
-```
-
-**To change appearance:**
-- Adjust `min-width` to make button wider/narrower
-- Change `font-size` for input text
-- Modify `padding` for height
-- Update icon in `.search-submit:before { content: "🔍"; }`
-
-### Adjusting Mobile Breakpoint
-
-The mobile/desktop breakpoint is 1024px. To change:
-
-1. Search for `@media (max-width: 1023px)` in `design-system.css`
-2. Search for `@media (min-width: 1024px)` in `design-system.css`
-3. Update both to your desired breakpoint
-4. Update the comment in `:root` that mentions "1024px breakpoint"
-
----
-
-## Component Reference
-
-### Navigation Items
+Edit the drawer aside in `bighead.html`:
 
 ```html
-<a href="/" class="nav-item">
-  <span class="navname">Home</span>
-</a>
+<aside class="bg-base-200 min-h-screen w-80">  <!-- Changed from w-64 -->
 ```
 
-**Styling:**
-```css
-.nav-item {
-  padding: var(--spacing-2);
-  background-color: transparent;
-  transition: background-color 0.2s;
-}
+**Max content width:**
 
-.nav-item:hover {
-  background-color: #fff;
-}
-
-.nav-item.active {
-  background-color: #fff;
-}
-```
-
-### Search Bar
-
-Template: `templates/includes/search_bar.html`
+Edit the container in `bighead.html`:
 
 ```html
-<form action="/search/" method="GET" class="search-form">
-  <div class="search-form-wrapper">
-    <input type="search" class="search-input" name="q">
-    <input type="submit" class="search-submit" value="Search">
-  </div>
-</form>
+<div class="container mx-auto px-4 py-6 lg:py-8 max-w-5xl">  <!-- Changed from max-w-4xl -->
 ```
 
-### Post Title & Date Header
+**Mobile breakpoint:**
+
+Tailwind's `lg:` prefix is 1024px by default. To change:
+
+```javascript
+// tailwind.config.js
+theme: {
+  extend: {
+    screens: {
+      'lg': '1280px',  // Change breakpoint
+    },
+  },
+}
+```
+
+### Updating Typography
+
+**Font sizes:**
+
+Use Tailwind's text size utilities:
+- `text-xs` - 0.75rem
+- `text-sm` - 0.875rem
+- `text-base` - 1rem
+- `text-lg` - 1.125rem
+- `text-xl` - 1.25rem
+- `text-2xl` - 1.5rem
+- `text-3xl` - 1.875rem
+- `text-4xl` - 2.25rem
+
+**Font weights:**
+- `font-light` - 300
+- `font-normal` - 400
+- `font-medium` - 500
+- `font-semibold` - 600
+- `font-bold` - 700
+- `font-extrabold` - 800
+
+**Line heights:**
+- `leading-none` - 1
+- `leading-tight` - 1.25
+- `leading-snug` - 1.375
+- `leading-normal` - 1.5
+- `leading-relaxed` - 1.625
+
+### Adding Icons
+
+DaisyUI works well with SVG icons. The templates use Heroicons.
 
 ```html
-<!-- Date Header -->
-<div class="bb b--newgreen w-100 ibmplexmono ttu f6 dt-published mb5">
-  January 1, 2025
-</div>
-
-<!-- Post Title -->
-<h1 class="f2 fw8 lh-solid mv1 posttitle">Post Title</h1>
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+</svg>
 ```
 
-### Blockquotes
-
-```css
-blockquote {
-  border-left: 4px solid var(--color-newgreen);
-  padding-left: 10px;
-  margin-left: 10px;
-  font-style: italic;
-}
-```
-
-### Code Blocks
-
-```css
-pre {
-  background-color: black;
-  color: white;
-  padding: var(--spacing-4);
-  overflow: scroll;
-  font-size: 12px;
-}
-```
+Resources:
+- [Heroicons](https://heroicons.com/) - Used in templates
+- [DaisyUI Icons](https://daisyui.com/docs/themes/) - Icon recommendations
 
 ---
 
@@ -418,216 +488,137 @@ pre {
 
 ### Mobile-First Approach
 
-The design is mobile-first with desktop enhancements at 1024px+.
+Tailwind uses mobile-first breakpoints. Write mobile styles first, then add responsive modifiers:
 
-### Key Responsive Patterns
+```html
+<!-- Padding: 4 on mobile, 8 on large screens -->
+<div class="p-4 lg:p-8">
 
-**Desktop-only classes:**
-```css
-.ph0-l      /* No horizontal padding on large screens */
-.pt5-l      /* Larger top padding on large screens */
-.db-l       /* Display block on large screens */
-.dn-l       /* Display none on large screens */
+<!-- Hidden on mobile, visible on large screens -->
+<div class="hidden lg:block">
+
+<!-- Full width on mobile, 2/3 width on large screens -->
+<div class="w-full lg:w-2/3">
 ```
 
-**Content width responsive:**
-```css
-.w-two-thirds-ns  /* 66.67% width on desktop, 100% on mobile */
+### Breakpoints
+
+- Default (mobile): < 1024px
+- `lg:` prefix: ≥ 1024px
+
+### Common Responsive Patterns
+
+**Responsive Grid:**
+```html
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div>Column 1</div>
+  <div>Column 2</div>
+  <div>Column 3</div>
+</div>
 ```
 
-### Mobile Navigation
-
-On mobile (<1024px):
-- Sidebar slides in from left
-- Hamburger menu in top-right
-- Dark overlay when menu is open
-- Body scroll disabled when menu is open
-
-**Key elements:**
-```css
-.hamburger-button    /* Three-line menu icon */
-.mobile-header       /* Fixed top bar */
-.mobile-overlay      /* Dark background overlay */
-.sidebar-nav         /* Slides in/out with transform */
+**Responsive Text Sizes:**
+```html
+<h1 class="text-2xl lg:text-4xl">Responsive Heading</h1>
 ```
 
-### Testing Responsive Design
-
-1. Open browser DevTools (F12)
-2. Toggle device toolbar (Ctrl+Shift+M)
-3. Test at these key widths:
-   - 375px (iPhone SE)
-   - 768px (iPad)
-   - 1024px (Breakpoint)
-   - 1440px (Desktop)
+**Show/Hide on Mobile:**
+```html
+<div class="lg:hidden">Mobile only</div>
+<div class="hidden lg:block">Desktop only</div>
+```
 
 ---
 
 ## Best Practices
 
-### 1. Use Design Tokens
+### 1. Use Tailwind Utilities
 
-**Good:**
-```css
-.my-component {
-  color: var(--color-primary-blue);
-  padding: var(--spacing-4);
-  font-family: var(--font-sans);
-}
-```
-
-**Bad:**
-```css
-.my-component {
-  color: #0066cc;
-  padding: 16px;
-  font-family: "Libre Franklin";
-}
-```
-
-### 2. Prefer Utility Classes
-
-**Good:**
+✅ **Good:**
 ```html
-<div class="mb4 ph3 bg-near-white br2">Content</div>
+<div class="flex items-center justify-between p-4 bg-base-200 rounded-lg">
 ```
 
-**Bad:**
+❌ **Avoid:**
 ```html
-<div style="margin-bottom: 1rem; padding: 0 0.75rem; background: #f3f3f3; border-radius: 0.25rem;">Content</div>
+<div style="display: flex; padding: 1rem; background: #f3f3f3;">
 ```
 
-### 3. Add New Styles to design-system.css
+### 2. Use DaisyUI Components
 
-When creating new components:
-
-1. Add styles to the appropriate section in `design-system.css`
-2. Use a comment header:
-   ```css
-   /* ==========================================================================
-      Component Name
-      ========================================================================== */
-   ```
-3. Use CSS variables for all values
-4. Include responsive styles in the same section
-
-### 4. Comment Complex Styles
-
-```css
-/* Mobile Sidebar Overlay */
-.sidebar-nav.mobile-open {
-  transform: translateX(0);  /* Slide in from left */
-}
+✅ **Good:**
+```html
+<button class="btn btn-primary">Click Me</button>
 ```
 
-### 5. Test Across Devices
+❌ **Avoid:**
+```html
+<button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Click Me</button>
+```
 
-Before committing design changes:
+### 3. Use Semantic Color Classes
 
-- ✅ Test on desktop (≥1024px)
-- ✅ Test on tablet (768px)
-- ✅ Test on mobile (375px)
-- ✅ Test hamburger menu functionality
-- ✅ Test search bar on all sizes
-- ✅ Test link hover states
-- ✅ Check color contrast for accessibility
+✅ **Good:**
+```html
+<div class="bg-primary text-primary-content">
+```
 
-### 6. Version Control
+❌ **Avoid:**
+```html
+<div class="bg-blue-600 text-white">
+```
 
-When making design changes:
+### 4. Keep Custom CSS Minimal
 
-1. Work on a feature branch
-2. Make incremental commits
-3. Use descriptive commit messages:
-   ```
-   Update primary color to purple theme
+Only add custom CSS when Tailwind utilities aren't sufficient. Use `@layer` directives to organize.
 
-   - Changed CSS variables for primary colors
-   - Updated link hover effects
-   - Modified search button background
-   ```
+### 5. Build CSS After Template Changes
+
+Always rebuild after editing templates:
+```bash
+npm run build:css
+```
+
+Or use watch mode during development:
+```bash
+npm run watch:css
+```
+
+### 6. Test Responsively
+
+Test on multiple screen sizes:
+- Mobile (< 1024px)
+- Desktop (≥ 1024px)
+
+Use browser DevTools or Playwright tests:
+```bash
+npm run test:responsive
+```
+
+### 7. Maintain Accessibility
+
+- Use semantic HTML
+- Ensure sufficient color contrast
+- Add `aria-label` to icon buttons
+- Test keyboard navigation
 
 ---
 
-## Quick Reference
+## Resources
 
-### Most Common Tasks
-
-| Task | File | Location |
-|------|------|----------|
-| Change primary color | `design-system.css` | `:root` selector, line ~13 |
-| Adjust feed spacing | `design-system.css` | "Feed Entry Styles" section |
-| Modify link hover | `design-system.css` | "Links" section |
-| Update fonts | `base.html`, `design-system.css` | Font links, CSS variables |
-| Change sidebar width | `design-system.css` | `--sidebar-width` variable |
-| Adjust mobile breakpoint | `design-system.css` | All `@media` queries |
-| Modify search bar | `design-system.css` | "Search Bar Styling" section |
-| Update navigation | `bighead.html`, `smallhead.html` | Sidebar nav section |
-
-### Design System Resources
-
-- **Main stylesheet**: `static/css/design-system.css`
-- **Color palette**: `:root` selector in `design-system.css`
-- **Utility classes**: Throughout `design-system.css`
-- **Component styles**: Organized sections in `design-system.css`
-
----
-
-## Troubleshooting
-
-### Issue: Styles not applying
-
-1. Clear browser cache (Ctrl+Shift+R)
-2. Check if Django static files are collected: `python manage.py collectstatic`
-3. Verify CSS file is loaded in browser DevTools Network tab
-4. Check for CSS syntax errors in DevTools Console
-
-### Issue: Mobile menu not working
-
-1. Check JavaScript console for errors
-2. Verify hamburger button has `id="hamburger-btn"`
-3. Ensure sidebar has class `sidebar-nav`
-4. Check that overlay has `id="mobile-overlay"`
-5. Verify `base.html` includes the JavaScript at the bottom
-
-### Issue: Search bar wrapping
-
-1. Check `.search-form` has `align-items: stretch`
-2. Verify `.search-input` has `min-width: 0` and `flex: 1`
-3. Ensure `.search-submit` has `flex-shrink: 0`
-4. Check no extra whitespace in template between input and button
-
-### Issue: Spacing inconsistent
-
-1. Use CSS variables from `:root`, not hardcoded values
-2. Check for inline styles in templates overriding CSS
-3. Verify utility classes are spelled correctly
-4. Check browser DevTools Computed styles to see what's applied
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [DaisyUI Documentation](https://daisyui.com/)
+- [DaisyUI Components](https://daisyui.com/components/)
+- [DaisyUI Themes](https://daisyui.com/docs/themes/)
+- [Heroicons](https://heroicons.com/)
 
 ---
 
 ## Getting Help
 
-If you need to make design changes and aren't sure how:
+- Check `CLAUDE.md` for project-specific guidelines
+- Review existing templates for patterns
+- Consult Tailwind/DaisyUI documentation
+- Run Playwright tests to verify changes
 
-1. Search this guide for relevant sections
-2. Look at similar existing components in `design-system.css`
-3. Use browser DevTools to inspect existing elements
-4. Check `DESIGN_SYSTEM.md` for the original design specifications
-5. Test changes in browser DevTools before editing CSS files
-
----
-
-## Changelog
-
-| Date | Change | Author |
-|------|--------|--------|
-| 2025-11-07 | Initial design system guide created | Claude |
-| 2025-11-07 | Blue theme implementation | Claude |
-| 2025-11-07 | Mobile hamburger menu added | Claude |
-| 2025-11-07 | Search bar icon implementation | Claude |
-| 2025-11-10 | Removed Tailwind references, simplified guide | Claude |
-
----
-
-*Last updated: November 10, 2025*
+**Questions?** Open an issue or check the documentation above.

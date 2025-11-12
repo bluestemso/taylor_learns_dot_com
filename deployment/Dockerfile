@@ -51,6 +51,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # ↑ Command-line tool for making HTTP requests (used for health checks)
     ca-certificates \
     # ↑ SSL certificates needed for HTTPS connections
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    # ↑ Add NodeSource repository for Node.js 20 LTS
+    && apt-get install -y nodejs \
+    # ↑ Install Node.js and npm (needed for Tailwind CSS build)
     && rm -rf /var/lib/apt/lists/*
     # ↑ Cleanup: removes package lists to reduce image size (saves ~20-30MB)
     # This is safe because we already installed everything we need
@@ -92,6 +96,18 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
 
 # -----------------------------------------------------------------------------
+# Copy Node.js Dependency Files (Layer Caching Optimization)
+# -----------------------------------------------------------------------------
+# Copy package.json and package-lock.json for npm dependencies
+COPY package*.json ./
+
+# -----------------------------------------------------------------------------
+# Install Node.js Dependencies
+# -----------------------------------------------------------------------------
+# npm ci does a clean install based on package-lock.json (faster and more reliable than npm install)
+RUN npm ci
+
+# -----------------------------------------------------------------------------
 # Copy Application Code
 # -----------------------------------------------------------------------------
 # Now we copy the rest of the application code.
@@ -100,6 +116,12 @@ RUN uv sync --frozen
 # - Dependencies change rarely
 # - This ordering maximizes Docker's layer caching efficiency
 COPY . .
+
+# -----------------------------------------------------------------------------
+# Build Tailwind CSS
+# -----------------------------------------------------------------------------
+# Build the Tailwind CSS file from source before collecting static files
+RUN npm run build:css
 
 # -----------------------------------------------------------------------------
 # Create Non-Root User (Security Best Practice)

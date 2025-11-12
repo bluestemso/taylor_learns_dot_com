@@ -1,6 +1,9 @@
 {
   "type": "module",
   "scripts": {
+    "build:css": "npx tailwindcss -i ./static/css/src/main.css -o ./static/css/tailwind.css --minify",
+    "watch:css": "npx tailwindcss -i ./static/css/src/main.css -o ./static/css/tailwind.css --watch",
+    "dev": "npm run watch:css",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
@@ -14,7 +17,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
+    "@tailwindcss/cli": "^4.1.17",
     "autoprefixer": "^10.4.21",
+    "daisyui": "^5.5.0",
     "playwright": "^1.56.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17"

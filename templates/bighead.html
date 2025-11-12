@@ -2,62 +2,63 @@
 {% load static %}
 
 {% block body %}
-<!-- Fixed Sidebar Navigation -->
-<aside class="sidebar-nav bg-near-white">
-  <div class="pv4 ph3">
-    <h1 class="f3 fw8 mb4"><a href="/" class="link-black" style="text-decoration: none; box-shadow: none;">Taylor Learns</a></h1>
+<div class="drawer lg:drawer-open">
+  <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
 
-    <nav>
-      <a href="/" class="nav-item">
-        <span class="navname">Home</span>
-      </a>
-      <a href="/about/" class="nav-item">
-        <span class="navname">About</span>
-      </a>
-      <a href="/tags/" class="nav-item">
-        <span class="navname">Tags</span>
-      </a>
-      <a href="/atom/everything/" class="nav-item" title="Atom feed">
-        <span class="navname">Feed</span>
-      </a>
-    </nav>
-
-    <!-- Search Bar in Sidebar -->
-    <div class="search-wrapper">
-      {% include "includes/search_bar.html" %}
+  <!-- Main Content -->
+  <div class="drawer-content">
+    <!-- Mobile Header -->
+    <div class="navbar bg-base-200 lg:hidden sticky top-0 z-50">
+      <div class="flex-none">
+        <label for="sidebar-drawer" class="btn btn-square btn-ghost">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </label>
+      </div>
+      <div class="flex-1">
+        <h1 class="text-xl font-extrabold"><a href="/" class="link link-hover no-underline">Taylor Learns</a></h1>
+      </div>
     </div>
-  </div>
-</aside>
 
-<!-- Mobile Header -->
-<div class="mobile-header">
-  <h1 class="f4 fw8"><a href="/" style="text-decoration: none; color: inherit;">Taylor Learns</a></h1>
-  <button class="hamburger-button" id="hamburger-btn" aria-label="Toggle menu">
-    <span></span>
-    <span></span>
-    <span></span>
-  </button>
-</div>
-
-<!-- Mobile Overlay -->
-<div class="mobile-overlay" id="mobile-overlay"></div>
-
-<!-- Main Content Area -->
-<div class="sidebar-layout">
-  <div class="pt4 pt5-l pb2 w-two-thirds-ns center">
-    <div class="f4 ph3 pb4 ph0-l lh-copy">
+    <!-- Page Content -->
+    <div class="container mx-auto px-4 py-6 lg:py-8 max-w-4xl">
       {% if current_tags %}
-      <p id="currenttags" class="mb3">
-        <span class="ttu f5 newgreen tracked b">Tagged:</span>
+      <div class="mb-6">
+        <span class="uppercase text-sm text-primary font-bold tracking-wider">Tagged:</span>
         {% for tag in current_tags %}
-          <a href="/tags/{{ tag }}/" class="item-tag">{{ tag }} <span>{{ tag.total_count }}</span></a>
+          <a href="/tags/{{ tag }}/" class="badge badge-primary badge-outline ml-2">{{ tag }} <span class="ml-1">{{ tag.total_count }}</span></a>
         {% endfor %}
-        <a href="/tags/" class="more">...</a>
-      </p>
+        <a href="/tags/" class="link link-primary ml-2">...</a>
+      </div>
       {% endif %}
 
       {% block primary %}{% endblock %}
     </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="drawer-side z-40">
+    <label for="sidebar-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+    <aside class="bg-base-200 min-h-screen w-64">
+      <div class="p-4">
+        <h1 class="text-2xl font-extrabold mb-6">
+          <a href="/" class="link link-hover no-underline">Taylor Learns</a>
+        </h1>
+
+        <nav class="menu">
+          <li><a href="/" class="menu-item">Home</a></li>
+          <li><a href="/about/" class="menu-item">About</a></li>
+          <li><a href="/tags/" class="menu-item">Tags</a></li>
+          <li><a href="/atom/everything/" class="menu-item" title="Atom feed">Feed</a></li>
+        </nav>
+
+        <!-- Search Bar in Sidebar -->
+        <div class="mt-6">
+          {% include "includes/search_bar.html" %}
+        </div>
+      </div>
+    </aside>
   </div>
 </div>
 {% endblock %}

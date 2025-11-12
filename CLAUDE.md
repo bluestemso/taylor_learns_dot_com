@@ -16,24 +16,31 @@ A Django-based blog application built on foundations originally developed by Sim
 - **Gunicorn** - Production WSGI server
 - **WhiteNoise** - Static file serving with content hashing
 - **Playwright** - End-to-end testing framework
-- **Custom CSS** - Design system built with CSS custom properties
+- **Tailwind CSS v4** - Utility-first CSS framework
+- **DaisyUI** - Component library for Tailwind with "lofi" (light) and "black" (dark) themes
 
 ## Development Commands
 
 ### Environment Setup
 
 ```bash
-# Install dependencies and create virtual environment
+# Install Python dependencies and create virtual environment
 uv sync
+
+# Install Node.js dependencies (for Tailwind CSS)
+npm install
 
 # Activate virtual environment (if not using uv run)
 source .venv/bin/activate  # macOS/Linux
 
-# Add new dependency
+# Add new Python dependency
 uv add package-name
 
-# Add development dependency
+# Add development Python dependency
 uv add --dev package-name
+
+# Add new Node.js dependency
+npm install --save-dev package-name
 ```
 
 ### Running the Application
@@ -120,6 +127,11 @@ npm run test:report        # View HTML report
 ### Static Files
 
 ```bash
+# Build Tailwind CSS (required after template/style changes)
+npm run build:css        # Production build (minified)
+npm run watch:css        # Development mode (watches for changes)
+npm run dev              # Alias for watch:css
+
 # Collect static files (required before deployment)
 uv run python manage.py collectstatic --noinput
 ```
@@ -154,7 +166,9 @@ templates/          - Django templates (NOT Jinja2)
 
 static/             - Static assets
   └── css/
-      └── design-system.css - Main stylesheet with CSS custom properties
+      ├── src/
+      │   └── main.css      - Tailwind CSS input file with custom styles
+      └── tailwind.css      - Generated Tailwind CSS output (built by npm run build:css)
 
 tests/              - Playwright E2E tests
   ├── design-system.spec.js
@@ -209,25 +223,59 @@ Templates use Django Template Language (NOT Jinja2):
 
 ### Frontend Architecture
 
-The blog uses a **custom CSS design system** built with CSS custom properties:
+The blog uses **Tailwind CSS v4 with DaisyUI**:
 
-- **Main stylesheet:** `static/css/design-system.css`
-- **Color theme:** Purple gradient header (#6b2d8a) with blue links (#0066cc)
-- **Typography:** Helvetica Neue (sans-serif), IBM Plex Mono (monospace)
-- **Layout:** Fixed sidebar (223px) with responsive mobile hamburger menu
-- **Breakpoint:** 1024px (mobile vs desktop)
+- **Framework:** Tailwind CSS v4 - Utility-first CSS framework
+- **Component Library:** DaisyUI - Pre-built components (drawer, navbar, buttons, forms, badges, cards)
+- **Themes:**
+  - Light theme: "lofi" (default)
+  - Dark theme: "black"
+- **Typography:** Libre Franklin (sans-serif), IBM Plex Mono (monospace)
+- **Layout:** DaisyUI drawer component with sidebar navigation, responsive mobile menu
+- **Breakpoint:** 1024px (mobile vs desktop) using `lg:` prefix
 
 ### Key Design Files
 
 - `FRONTEND_DESIGN_GUIDE.md` - Complete guide for making frontend changes
-- `static/css/design-system.css` - Main stylesheet with custom properties and utility classes
+- `tailwind.config.js` - Tailwind configuration with DaisyUI plugin and themes
+- `postcss.config.js` - PostCSS configuration for Tailwind processing
+- `static/css/src/main.css` - Tailwind directives and custom CSS
+- `static/css/tailwind.css` - Generated output file (don't edit directly)
 
 ### Making Design Changes
 
-1. Edit `static/css/design-system.css` directly
-2. Test across viewports using Playwright tests: `npm run test:responsive`
-3. Check design system compliance: `npm run test:design`
-4. Mobile navigation: `npm run test:nav`
+1. Edit templates using Tailwind utility classes and DaisyUI components
+2. For custom styles, edit `static/css/src/main.css` (use `@layer` directives)
+3. Build CSS: `npm run build:css` (or `npm run watch:css` during development)
+4. Test across viewports: `npm run test:responsive`
+5. Check design system compliance: `npm run test:design`
+6. Mobile navigation: `npm run test:nav`
+
+### Common DaisyUI Components Used
+
+- **Drawer** - Sidebar navigation with mobile toggle (`bighead.html`, `smallhead.html`)
+- **Navbar** - Mobile header bar
+- **Menu** - Navigation menu items
+- **Button** - Buttons and icon buttons (`.btn`, `.btn-primary`, `.btn-ghost`)
+- **Form Controls** - Input fields (`.input`, `.input-bordered`)
+- **Join** - Connected form elements (search bar)
+- **Badge** - Tag badges (`.badge`, `.badge-primary`)
+- **Card** - Content cards (`.card`, `.bg-base-200`)
+
+### Tailwind Build Process
+
+The CSS build happens in two contexts:
+
+1. **Local Development:**
+   ```bash
+   npm run watch:css  # Watches templates for changes, rebuilds automatically
+   ```
+
+2. **Docker Build (Production):**
+   - Dockerfile installs Node.js 20 LTS
+   - Runs `npm ci` to install dependencies
+   - Runs `npm run build:css` to generate minified CSS
+   - Output included in `collectstatic` step
 
 ## Environment Variables
 
