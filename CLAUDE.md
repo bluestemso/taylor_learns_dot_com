@@ -63,6 +63,43 @@ uv run python manage.py shell
 uv run python manage.py reindex_all
 ```
 
+### Working with Production Data Locally
+
+To develop with a local copy of production data:
+
+```bash
+# 1. On PRODUCTION SERVER: Create database dump
+ssh user@server
+cd ~/app-stack/taylor_learns_dot_com
+./scripts/dump-production-db.sh
+
+# 2. On LOCAL MACHINE: Download dump
+scp user@server:~/app-stack/taylor_learns_dot_com/db_dump_*.sql ./scripts/
+
+# 3. On LOCAL MACHINE: Restore to local database
+./scripts/restore-local-db.sh scripts/db_dump_2024-11-12.sql
+
+# 4. Start development with production data
+docker compose up -d          # Run everything in Docker
+# OR
+docker compose up -d postgres # PostgreSQL in Docker only
+uv run python manage.py runserver  # Django runs locally
+```
+
+**Two development modes:**
+
+- **Docker mode** (recommended): Both PostgreSQL and Django in Docker
+  - `docker compose up -d` starts everything
+  - Matches production environment exactly
+  - Use `DB_HOST=postgres` in `.env`
+
+- **Hybrid mode** (faster iteration): PostgreSQL in Docker, Django local
+  - `docker compose up -d postgres` for database only
+  - `uv run python manage.py runserver` for Django
+  - Use `DB_HOST=localhost` in `.env`
+
+See `scripts/README.md` for detailed documentation on database workflows.
+
 ### Testing
 
 ```bash
@@ -384,3 +421,4 @@ See `.github/workflows/deploy.yml` and `deployment/README.md` for details.
 - `README.md` - Full project documentation and development practices
 - `FRONTEND_DESIGN_GUIDE.md` - Frontend design system guide
 - `tests/README.md` - Playwright testing documentation
+- `scripts/README.md` - Database dump/restore workflows for local development

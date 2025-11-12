@@ -33,3 +33,9 @@ package-lock.json
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Database dumps
+scripts/*.sql
+scripts/*.sql.gz
+*.dump
+db_dump_*
