@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load entry_tags %}
+
+{% block title %}Preview: {{ title }}{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200 p-8">
+  <div class="max-w-2xl mx-auto">
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title">
+          {{ title|typography }}
+          <div class="badge badge-secondary">{{ type_label }}</div>
+        </h2>
+        <p>
+          {{ preview_text }}{% if remaining_count > 0 %} <a href="{{ obj.get_absolute_url }}" class="link link-primary">[... {{ remaining_count }} more words]</a>{% endif %}
+        </p>
+        <div class="card-actions justify-end mt-4">
+          {% for tag in obj.tags.all %}
+          <div class="badge badge-outline">
+            <a href="{{ tag.get_absolute_url }}" class="no-underline">{{ tag.tag }}</a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

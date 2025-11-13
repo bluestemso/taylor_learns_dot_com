@@ -724,6 +724,93 @@ def redirect_note(request, pk):
     return Redirect(get_object_or_404(Note, pk=pk).get_absolute_url())
 
 
+def entry_preview(request, entry_id):
+    """
+    Preview page for any content type (Entry, Blogmark, Quotation, Note)
+    accessible at /ep/<entry_id>
+    Displays a card preview based on DaisyUI card component.
+    """
+    from django.utils.html import strip_tags
+    
+    # Try to find the entry in any of the content types
+    obj = None
+    content_type = None
+    type_label = None
+    
+    # Try Entry first
+    try:
+        obj = Entry.objects.prefetch_related("tags").get(pk=entry_id)
+        content_type = "entry"
+        type_label = "Blog Post"
+    except Entry.DoesNotExist:
+        pass
+    
+    # Try Blogmark
+    if not obj:
+        try:
+            obj = Blogmark.objects.prefetch_related("tags").get(pk=entry_id)
+            content_type = "blogmark"
+            type_label = "Blogmark"
+        except Blogmark.DoesNotExist:
+            pass
+    
+    # Try Quotation
+    if not obj:
+        try:
+            obj = Quotation.objects.prefetch_related("tags").get(pk=entry_id)
+            content_type = "quotation"
+            type_label = "Quotation"
+        except Quotation.DoesNotExist:
+            pass
+    
+    # Try Note
+    if not obj:
+        try:
+            obj = Note.objects.prefetch_related("tags").get(pk=entry_id)
+            content_type = "note"
+            type_label = "Note"
+        except Note.DoesNotExist:
+            pass
+    
+    if not obj:
+        raise Http404("Content not found")
+    
+    # Get the title based on content type
+    if content_type == "entry":
+        title = obj.title
+        # Get body content, strip HTML tags, and get plain text
+        body_text = strip_tags(obj.body_rendered())
+    elif content_type == "blogmark":
+        title = obj.title if obj.title else obj.link_title
+        body_text = strip_tags(obj.body())
+    elif content_type == "quotation":
+        title = obj.title()
+        body_text = strip_tags(obj.body())
+    elif content_type == "note":
+        title = obj.title if obj.title else f"Note on {obj.created.strftime('%B %d, %Y')}"
+        body_text = strip_tags(obj.body_rendered())
+    
+    # Extract first 100 words and count remaining
+    words = body_text.split()
+    preview_words = words[:100]
+    remaining_count = len(words) - 100
+    
+    preview_text = " ".join(preview_words)
+    
+    return render(
+        request,
+        "entry_preview.html",
+        {
+            "obj": obj,
+            "content_type": content_type,
+            "type_label": type_label,
+            "title": title,
+            "preview_text": preview_text,
+            "remaining_count": remaining_count,
+        },
+    )
+
+
 def about(request):
     return render(request, "about.html")
 

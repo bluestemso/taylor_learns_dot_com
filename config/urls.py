@@ -138,6 +138,8 @@ urlpatterns = [
     re_path(r"^b/(\d+)/?$", blog_views.redirect_blogmark),
     re_path(r"^q/(\d+)/?$", blog_views.redirect_quotation),
     re_path(r"^n/(\d+)/?$", blog_views.redirect_note),
+    # Preview page for any content type
+    re_path(r"^ep/(\d+)/?$", blog_views.entry_preview),
     # Ancient URL pattern still getting hits
     re_path(r"^/?archive/(\d{4})/(\d{2})/(\d{2})/$", blog_views.archive_day_redirect),
     re_path(
