@@ -400,6 +400,75 @@ blockquote {
 }
 
 /* ==========================================================================
+   Quotebacks - Rich quotes from other websites
+   ========================================================================== */
+
+.quoteback {
+  border: 1px solid var(--color-black-20);
+  border-radius: 4px;
+  padding: var(--spacing-5);
+  margin: var(--spacing-6) 0;
+  background-color: white;
+  box-shadow: 0 2px 4px var(--color-black-10);
+}
+
+.quoteback-quote {
+  border-left: 4px solid var(--color-newgreen);
+  padding-left: var(--spacing-4);
+  margin-left: 0;
+  margin-bottom: var(--spacing-4);
+  font-style: italic;
+  font-size: var(--font-size-body);
+  line-height: 1.6;
+}
+
+.quoteback-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-black-10);
+  font-size: var(--font-size-f6);
+  font-style: normal;
+}
+
+.quoteback-favicon {
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.quoteback-cite {
+  font-style: normal;
+  color: var(--color-black-50);
+}
+
+.quoteback-link {
+  color: var(--color-newgreen);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.quoteback-link:hover {
+  text-decoration: underline;
+}
+
+.quoteback-author {
+  color: var(--color-black-50);
+}
+
+.quoteback-commentary {
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-5);
+  border-top: 2px solid var(--color-black-10);
+}
+
+.quoteback-commentary h3 {
+  font-size: var(--font-size-f4);
+  font-weight: 600;
+  margin-bottom: var(--spacing-4);
+}
+
+/* ==========================================================================
    Code Blocks
    ========================================================================== */
 

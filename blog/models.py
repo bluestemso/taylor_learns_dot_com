@@ -53,6 +53,9 @@ class Tag(models.Model):
     def quote_count(self):
         return self.quotation_set.filter(is_draft=False).count()
 
+    def quoteback_count(self):
+        return self.quoteback_set.filter(is_draft=False).count()
+
     def note_count(self):
         return self.note_set.filter(is_draft=False).count()
 
@@ -81,6 +84,14 @@ class Tag(models.Model):
             output_field=IntegerField(),
         )
 
+        quoteback_count = Subquery(
+            Quoteback.objects.filter(is_draft=False, tags=OuterRef("pk"))
+            .values("tags")
+            .annotate(count=Count("id"))
+            .values("count"),
+            output_field=IntegerField(),
+        )
+
         note_count = Subquery(
             Note.objects.filter(is_draft=False, tags=OuterRef("pk"))
             .values("tags")
@@ -96,6 +107,7 @@ class Tag(models.Model):
                     Coalesce(entry_count, 0)
                     + Coalesce(blogmark_count, 0)
                     + Coalesce(quotation_count, 0)
+                    + Coalesce(quoteback_count, 0)
                     + Coalesce(note_count, 0)
                 )
             )
@@ -121,12 +133,17 @@ class Tag(models.Model):
             .annotate(type=models.Value("quotation", output_field=models.CharField()))
             .values("pk", "created", "type")
         )
+        quotebacks = (
+            self.quoteback_set.all()
+            .annotate(type=models.Value("quoteback", output_field=models.CharField()))
+            .values("pk", "created", "type")
+        )
         notes = (
             self.note_set.all()
             .annotate(type=models.Value("note", output_field=models.CharField()))
             .values("pk", "created", "type")
         )
-        return entries.union(blogmarks, quotations, notes).order_by("-created")
+        return entries.union(blogmarks, quotations, quotebacks, notes).order_by("-created")
 
     def get_related_tags(self, limit=10):
         """Get all items tagged with this, look at /their/ tags, order by count"""
@@ -136,6 +153,7 @@ class Tag(models.Model):
                 (Entry, "entry_set"),
                 (Blogmark, "blogmark_set"),
                 (Quotation, "quotation_set"),
+                (Quoteback, "quoteback_set"),
                 (Note, "note_set"),
             ):
                 qs = klass.objects.filter(
@@ -421,6 +439,82 @@ class Note(BaseModel):
         verbose_name_plural = "Notes"
 
 
+class Quoteback(BaseModel):
+    """
+    A quoteback is a quote from another website with rich metadata.
+    Inspired by https://github.com/Blogger-Peer-Review/quotebacks
+
+    Stores the quote text along with metadata from the source page
+    (title, author, favicon) all saved locally to ensure permanence
+    even if the source site goes offline.
+    """
+    quote_text = models.TextField(help_text="The quoted text from the source")
+    source_url = models.URLField(max_length=512, help_text="URL of the source page")
+    page_title = models.CharField(
+        max_length=512,
+        help_text="Title of the source page (auto-fetched)"
+    )
+    author = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Author name (if available)"
+    )
+    favicon = models.ImageField(
+        upload_to="quotebacks/favicons/",
+        blank=True,
+        null=True,
+        help_text="Favicon from the source site (auto-fetched)"
+    )
+    commentary = models.TextField(
+        blank=True,
+        help_text="Your commentary on the quote"
+    )
+    title = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Optional title for this quoteback post"
+    )
+
+    is_quoteback = True
+
+    def quote_rendered(self):
+        """Render quote text as markdown to HTML"""
+        return mark_safe(markdown(self.quote_text))
+
+    def commentary_rendered(self):
+        """Render commentary as markdown to HTML"""
+        if self.commentary:
+            return mark_safe(markdown(self.commentary))
+        return ""
+
+    def source_domain(self):
+        """Extract domain from source URL"""
+        try:
+            return self.source_url.split("/")[2]
+        except IndexError:
+            return self.source_url
+
+    def index_components(self):
+        return {
+            "A": self.page_title,
+            "B": " ".join(self.tags.values_list("tag", flat=True)),
+            "C": self.quote_text + " " + self.commentary + " " + self.source_domain(),
+        }
+
+    def __str__(self):
+        if self.title:
+            return self.title
+        # Return first 50 chars of quote as string representation
+        if len(self.quote_text) > 50:
+            return self.quote_text[:50] + "..."
+        return self.quote_text
+
+    class Meta(BaseModel.Meta):
+        verbose_name_plural = "Quotebacks"
+
+
 class Photo(models.Model):
     flickr_id = models.CharField(max_length=32)
     server = models.CharField(max_length=8)
@@ -601,6 +695,7 @@ def load_mixed_objects(dicts):
         ("blogmark", Blogmark),
         ("entry", Entry),
         ("quotation", Quotation),
+        ("quoteback", Quoteback),
         ("note", Note),
     ):
         ids = to_fetch.get(key) or []

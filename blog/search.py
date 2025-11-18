@@ -8,7 +8,7 @@ from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse, Http404
 from django.shortcuts import render
-from blog.models import Entry, Blogmark, Quotation, Note, Tag, load_mixed_objects
+from blog.models import Entry, Blogmark, Quotation, Quoteback, Note, Tag, load_mixed_objects
 from spellchecker import SpellChecker
 import datetime
 
@@ -129,6 +129,7 @@ def search(request, q=None, return_context=False):
         (Entry, "entry"),
         (Blogmark, "blogmark"),
         (Quotation, "quotation"),
+        (Quoteback, "quoteback"),
         (Note, "note"),
     ):
         if selected_type and selected_type != type_name:
@@ -246,6 +247,7 @@ def search(request, q=None, return_context=False):
     # Dynamic title
     noun = {
         "quotation": "Quotations",
+        "quoteback": "Quotebacks",
         "blogmark": "Blogmarks",
         "entry": "Entries",
         "note": "Notes",

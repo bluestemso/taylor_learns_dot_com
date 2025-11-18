@@ -19,6 +19,7 @@ from .models import (
     Blogmark,
     Entry,
     Quotation,
+    Quoteback,
     Note,
     Photo,
     Photoset,
@@ -73,6 +74,7 @@ def archive_item(request, year, month, day, slug):
         ("blogmark", Blogmark),
         ("entry", Entry),
         ("quotation", Quotation),
+        ("quoteback", Quoteback),
         ("note", Note),
     ):
         try:
@@ -161,6 +163,12 @@ def index(request):
         .union(
             Quotation.objects.filter(is_draft=False)
             .annotate(content_type=Value("quotation", output_field=CharField()))
+            .values("content_type", "id", "created")
+            .order_by()
+        )
+        .union(
+            Quoteback.objects.filter(is_draft=False)
+            .annotate(content_type=Value("quoteback", output_field=CharField()))
             .values("content_type", "id", "created")
             .order_by()
         )

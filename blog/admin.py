@@ -2,10 +2,12 @@ from django.contrib import admin
 from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.db.models.functions import Length
 from django.db.models import F
+from django import forms
 from .models import (
     Entry,
     Tag,
     Quotation,
+    Quoteback,
     Blogmark,
     Comment,
     Note,
@@ -13,6 +15,7 @@ from .models import (
     PreviousTagName,
     LiveUpdate,
 )
+from .quoteback_utils import fetch_page_metadata, download_favicon
 
 
 class BaseAdmin(admin.ModelAdmin):
@@ -67,6 +70,74 @@ class BlogmarkAdmin(BaseAdmin):
 class NoteAdmin(BaseAdmin):
     search_fields = ("tags__tag", "body")
     list_display = ("__str__", "created", "tag_summary", "is_draft")
+
+
+class QuotebackAdminForm(forms.ModelForm):
+    """Custom form for Quoteback that auto-fetches metadata."""
+
+    fetch_metadata = forms.BooleanField(
+        required=False,
+        initial=True,
+        help_text="Automatically fetch title, author, and favicon from source URL"
+    )
+
+    class Meta:
+        model = Quoteback
+        fields = "__all__"
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+
+        # Fetch metadata if requested and URL is present
+        if self.cleaned_data.get("fetch_metadata") and instance.source_url:
+            # Only fetch if we don't already have a title (new object or URL changed)
+            should_fetch = (
+                not instance.pk or  # New object
+                not instance.page_title or  # No title yet
+                self.has_changed() and "source_url" in self.changed_data  # URL changed
+            )
+
+            if should_fetch:
+                metadata = fetch_page_metadata(instance.source_url)
+
+                # Update fields if not already set
+                if not instance.page_title:
+                    instance.page_title = metadata.get("title", "")
+
+                if not instance.author and metadata.get("author"):
+                    instance.author = metadata["author"]
+
+                # Download and save favicon if we have a URL and no favicon yet
+                if metadata.get("favicon_url") and not instance.favicon:
+                    favicon_file = download_favicon(metadata["favicon_url"])
+                    if favicon_file:
+                        instance.favicon.save(favicon_file.name, favicon_file, save=False)
+
+        if commit:
+            instance.save()
+            self.save_m2m()
+
+        return instance
+
+
+@admin.register(Quoteback)
+class QuotebackAdmin(BaseAdmin):
+    form = QuotebackAdminForm
+    search_fields = ("tags__tag", "quote_text", "page_title", "author")
+    list_display = ("__str__", "page_title", "source_domain", "created", "tag_summary", "is_draft")
+    prepopulated_fields = {"slug": ("page_title",)}
+    fieldsets = (
+        (None, {
+            "fields": ("quote_text", "commentary", "title", "slug")
+        }),
+        ("Source Information", {
+            "fields": ("source_url", "fetch_metadata", "page_title", "author", "favicon")
+        }),
+        ("Metadata", {
+            "fields": ("tags", "created", "is_draft", "series", "card_image", "metadata", "import_ref"),
+            "classes": ("collapse",)
+        }),
+    )
 
 
 @admin.register(Tag)

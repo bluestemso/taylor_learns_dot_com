@@ -1,0 +1,47 @@
+{% extends "item_base.html" %}
+
+{% block title %}{{ quoteback.title|default:quoteback.page_title }}{% endblock %}
+
+{% block card_title %}{{ quoteback.title|default:quoteback.page_title }}{% endblock %}
+{% block card_description %}{{ quoteback.quote_text|striptags|truncatewords:30|force_escape }}{% endblock %}
+
+{% load entry_tags %}
+{% block item_content %}
+{% include "_draft_warning.html" %}
+
+<article class="quoteback">
+    <blockquote class="quoteback-quote" cite="{{ quoteback.source_url }}">
+        {{ quoteback.quote_rendered }}
+    </blockquote>
+
+    <footer class="quoteback-footer">
+        {% if quoteback.favicon %}
+        <img src="{{ quoteback.favicon.url }}" alt="" class="quoteback-favicon" width="16" height="16">
+        {% endif %}
+        <cite class="quoteback-cite">
+            <a href="{{ quoteback.source_url }}" class="quoteback-link" target="_blank" rel="noopener">
+                {{ quoteback.page_title }}
+            </a>
+            {% if quoteback.author %}
+            <span class="quoteback-author"> by {{ quoteback.author }}</span>
+            {% endif %}
+        </cite>
+    </footer>
+</article>
+
+{% if quoteback.commentary %}
+<div class="quoteback-commentary">
+    <h3>Commentary</h3>
+    {{ quoteback.commentary_rendered }}
+</div>
+{% endif %}
+
+<div class="entryFooter">Posted <a href="/{{ quoteback.created|date:"Y/M/j/" }}">{{ quoteback.created|date:"jS F Y" }}</a> at {{ quoteback.created|date:"f A"|lower }}</div>
+<p class="edit-page-link" data-admin-url="{{ quoteback.edit_url }}" style="display: none;"></p>
+{% endblock %}
+
+{% block secondary %}
+<div class="metabox">
+{% include "_tags.html" with obj=quoteback %}
+</div> <!-- .metabox -->
+{% endblock %}
