@@ -190,6 +190,7 @@ def index(request):
         ("entry", Entry),
         ("blogmark", Blogmark),
         ("quotation", Quotation),
+        ("quoteback", Quoteback),
         ("note", Note),
     ):
         if content_type not in to_load:

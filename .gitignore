@@ -2,6 +2,7 @@ venv
 .venv
 *.pyc
 staticfiles
+media/
 old-import-xml/blog_comment.xml
 
 # Environment variables

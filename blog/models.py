@@ -452,6 +452,8 @@ class Quoteback(BaseModel):
     source_url = models.URLField(max_length=512, help_text="URL of the source page")
     page_title = models.CharField(
         max_length=512,
+        blank=True,
+        default="",
         help_text="Title of the source page (auto-fetched)"
     )
     author = models.CharField(
@@ -468,6 +470,7 @@ class Quoteback(BaseModel):
     )
     commentary = models.TextField(
         blank=True,
+        default="",
         help_text="Your commentary on the quote"
     )
     title = models.CharField(
